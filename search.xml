@@ -1,0 +1,90 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>【OC】ReactiveObjC (RAC) 快速入门</title>
+    <url>/posts/reactiveobjc-quickstart/</url>
+    <content><![CDATA[<h2 id="ReactiveObjC-是什么？"><a href="#ReactiveObjC-是什么？" class="headerlink" title="ReactiveObjC 是什么？"></a>ReactiveObjC 是什么？</h2><p><code>ReactiveObjC</code>（常简称 <strong>RAC</strong>）是 Objective-C 生态中的响应式编程框架，源自 ReactiveCocoa。它把事件、异步回调和数据流统一成 <strong>信号（Signal）</strong>，让你用声明式的方式组合业务逻辑。</p>
+<p>适合处理：</p>
+<ul>
+<li>UI 事件与数据绑定</li>
+<li>网络请求串联 &#x2F; 并行</li>
+<li>复杂状态流转与取消</li>
+</ul>
+<h2 id="核心概念"><a href="#核心概念" class="headerlink" title="核心概念"></a>核心概念</h2><h3 id="Signal（信号）"><a href="#Signal（信号）" class="headerlink" title="Signal（信号）"></a>Signal（信号）</h3><p>信号是事件的序列，可以发送三种事件：</p>
+<ol>
+<li><code>next</code> — 正常值</li>
+<li><code>error</code> — 错误并终止</li>
+<li><code>completed</code> — 成功结束</li>
+</ol>
+<figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">RACSignal *signal = [RACSignal createSignal:^RACDisposable * _Nullable(<span class="type">id</span>&lt;RACSubscriber&gt;  _Nonnull subscriber) &#123;</span><br><span class="line">    [subscriber sendNext:<span class="string">@&quot;Hello RAC&quot;</span>];</span><br><span class="line">    [subscriber sendCompleted];</span><br><span class="line">    <span class="keyword">return</span> <span class="literal">nil</span>;</span><br><span class="line">&#125;];</span><br><span class="line"></span><br><span class="line">[signal subscribeNext:^(<span class="type">id</span>  _Nullable x) &#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@&quot;收到: %@&quot;</span>, x);</span><br><span class="line">&#125;];</span><br></pre></td></tr></table></figure>
+
+<h3 id="Subject"><a href="#Subject" class="headerlink" title="Subject"></a>Subject</h3><p><code>RACSubject</code> 既是信号，也是订阅者，常用于把命令式回调桥接到响应式流。</p>
+<h3 id="Command"><a href="#Command" class="headerlink" title="Command"></a>Command</h3><p><code>RACCommand</code> 适合封装「用户操作 → 异步任务」这一类可执行单元，例如按钮点击后发起请求。</p>
+<h2 id="常见用法速览"><a href="#常见用法速览" class="headerlink" title="常见用法速览"></a>常见用法速览</h2><h3 id="监听文本变化"><a href="#监听文本变化" class="headerlink" title="监听文本变化"></a>监听文本变化</h3><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">[<span class="keyword">self</span>.textField.rac_textSignal subscribeNext:^(<span class="built_in">NSString</span> * _Nullable text) &#123;</span><br><span class="line">    <span class="built_in">NSLog</span>(<span class="string">@&quot;输入: %@&quot;</span>, text);</span><br><span class="line">&#125;];</span><br></pre></td></tr></table></figure>
+
+<h3 id="组合多个信号"><a href="#组合多个信号" class="headerlink" title="组合多个信号"></a>组合多个信号</h3><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">RACSignal *username = <span class="keyword">self</span>.usernameField.rac_textSignal;</span><br><span class="line">RACSignal *password = <span class="keyword">self</span>.passwordField.rac_textSignal;</span><br><span class="line"></span><br><span class="line">RAC(<span class="keyword">self</span>.loginButton, enabled) = [RACSignal</span><br><span class="line">    combineLatest:@[username, password]</span><br><span class="line">    reduce:^<span class="type">id</span> _Nonnull(<span class="built_in">NSString</span> *user, <span class="built_in">NSString</span> *pass) &#123;</span><br><span class="line">        <span class="keyword">return</span> @(user.length &gt; <span class="number">0</span> &amp;&amp; pass.length &gt;= <span class="number">6</span>);</span><br><span class="line">    &#125;];</span><br></pre></td></tr></table></figure>
+
+<h3 id="网络请求链式处理"><a href="#网络请求链式处理" class="headerlink" title="网络请求链式处理"></a>网络请求链式处理</h3><figure class="highlight objc"><table><tr><td class="code"><pre><span class="line">[[[[<span class="keyword">self</span> fetchUserSignal]</span><br><span class="line">    flattenMap:^RACSignal *(User *user) &#123;</span><br><span class="line">        <span class="keyword">return</span> [<span class="keyword">self</span> fetchPostsSignalWithUserId:user.uid];</span><br><span class="line">    &#125;]</span><br><span class="line">    deliverOnMainThread]</span><br><span class="line">    subscribeNext:^(<span class="built_in">NSArray</span> *posts) &#123;</span><br><span class="line">        <span class="comment">// 更新 UI</span></span><br><span class="line">    &#125; error:^(<span class="built_in">NSError</span> *error) &#123;</span><br><span class="line">        <span class="comment">// 错误处理</span></span><br><span class="line">    &#125;];</span><br></pre></td></tr></table></figure>
+
+<h2 id="学习建议"><a href="#学习建议" class="headerlink" title="学习建议"></a>学习建议</h2><ol>
+<li>先搞清 <code>subscribeNext / error / completed</code> 生命周期</li>
+<li>熟悉常用操作符：<code>map</code>、<code>filter</code>、<code>combineLatest</code>、<code>flattenMap</code>、<code>throttle</code></li>
+<li>注意线程切换：<code>deliverOnMainThread</code> &#x2F; <code>subscribeOn</code></li>
+<li>管理订阅生命周期，避免循环引用（<code>@weakify</code> &#x2F; <code>@strongify</code>）</li>
+</ol>
+<h2 id="小结"><a href="#小结" class="headerlink" title="小结"></a>小结</h2><p>ReactiveObjC 的价值在于：<strong>用数据流描述变化，用操作符组合逻辑</strong>。入门时不必一次吃透全部操作符，从 UI 绑定和简单异步串联开始，很快就能感受到它在复杂页面中的优势。</p>
+<blockquote>
+<p>本文为示例文章，可按需替换为你的真实内容。</p>
+</blockquote>
+]]></content>
+      <categories>
+        <category>iOS</category>
+      </categories>
+      <tags>
+        <tag>ReactiveObjC</tag>
+        <tag>RAC</tag>
+        <tag>iOS</tag>
+        <tag>Objective-C</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>欢迎使用 Hexo + Butterfly</title>
+    <url>/posts/welcome/</url>
+    <content><![CDATA[<p>这是基于 <strong>Hexo</strong> 与 <strong>Butterfly</strong> 主题搭建的个人博客。</p>
+<p>当前已配置：</p>
+<ul>
+<li>星空背景 + 毛玻璃卡片</li>
+<li>左侧边栏（作者信息 &#x2F; 分类 &#x2F; 标签 &#x2F; 归档）</li>
+<li>字数统计与阅读时长</li>
+<li>本地搜索</li>
+<li>深浅色模式切换</li>
+</ul>
+<h2 id="常用命令"><a href="#常用命令" class="headerlink" title="常用命令"></a>常用命令</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npm run server   <span class="comment"># 本地预览 http://localhost:4000</span></span><br><span class="line">npm run build    <span class="comment"># 生成静态文件到 public/</span></span><br><span class="line">npm run clean    <span class="comment"># 清理缓存与生成物</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="新建文章"><a href="#新建文章" class="headerlink" title="新建文章"></a>新建文章</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">npx hexo new <span class="string">&quot;文章标题&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p>编辑 <code>source/_posts/</code> 下对应 Markdown 即可。</p>
+<p>祝写作愉快。</p>
+]]></content>
+      <categories>
+        <category>随笔</category>
+      </categories>
+      <tags>
+        <tag>Hexo</tag>
+        <tag>Butterfly</tag>
+        <tag>博客</tag>
+      </tags>
+  </entry>
+  <entry>
+    <title>文章标题</title>
+    <url>/posts/%E6%96%87%E7%AB%A0%E6%A0%87%E9%A2%98/</url>
+    <content><![CDATA[<p>正文写在这里……</p>
+]]></content>
+      <categories>
+        <category>分类名</category>
+      </categories>
+      <tags>
+        <tag>标签名</tag>
+      </tags>
+  </entry>
+</search>
