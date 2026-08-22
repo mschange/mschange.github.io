@@ -69,6 +69,22 @@
   background: rgba(20, 22, 30, 0.65) !important;
 }
 
+/* Header nav active state */
+#nav .menus_items a.site-page.active:not(.child) {
+  color: #2563eb !important;
+  font-weight: 600;
+}
+
+#nav .menus_items a.site-page.active:not(.child)::after {
+  width: 100%;
+  background-color: #2563eb;
+}
+
+#sidebar-menus .menus_items a.site-page.active:not(.child) {
+  color: #2563eb !important;
+  font-weight: 600;
+}
+
 /* Glass cards */
 #aside-content .card-widget,
 #recent-posts > .recent-post-item,
@@ -117,30 +133,49 @@
 
 /* Soft social grid */
 #aside-content .card-info .card-info-social-icons {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 0.5rem;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0.5rem 0.75rem;
+  justify-items: stretch;
   padding: 0.4rem 0.2rem 0.2rem;
 }
 
 #aside-content .card-info .card-info-social-icons .social-icon {
   display: inline-flex;
   align-items: center;
-  gap: 0.45rem;
+  justify-content: flex-start;
+  gap: 0.4rem;
+  width: 100%;
   margin: 0;
-  padding: 0.35rem 0.75rem;
+  padding: 0.35rem 0.55rem;
   border-radius: 999px;
   transition: transform 0.25s ease, background 0.25s ease;
   text-decoration: none;
+  white-space: nowrap;
+  box-sizing: border-box;
+}
+
+#aside-content .card-info .card-info-social-icons .social-icon i {
+  flex-shrink: 0;
+  width: 1em;
+  text-align: center;
 }
 
 #aside-content .card-info .card-info-social-icons .social-icon::after {
   content: attr(title);
-  font-size: 0.88rem;
+  flex: 1;
+  min-width: 0;
+  font-size: 0.82rem;
   font-weight: 500;
   color: var(--font-color);
   opacity: 0.9;
+  text-align: left;
+}
+
+/* 第三个链接（公众号）与第一列左对齐 */
+#aside-content .card-info .card-info-social-icons .social-icon:nth-child(3):last-child {
+  grid-column: 1;
+  justify-self: start;
 }
 
 #aside-content .card-info .card-info-social-icons .social-icon:hover {
@@ -242,6 +277,10 @@
 
 @media screen and (max-width: 768px) {
   #aside-content .card-info .card-info-social-icons {
-    align-items: center;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  #aside-content .card-info .card-info-social-icons .social-icon::after {
+    font-size: 0.76rem;
   }
 }

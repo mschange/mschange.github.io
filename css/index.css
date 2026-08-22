@@ -4075,30 +4075,6 @@ figure.highlight pre .javascript .function {
   -webkit-order: 4;
   order: 4;
 }
-.page .card-tags {
-  -webkit-box-ordinal-group: 5;
-  -moz-box-ordinal-group: 5;
-  -o-box-ordinal-group: 5;
-  -ms-flex-order: 5;
-  -webkit-order: 5;
-  order: 5;
-}
-.page .card-archives {
-  -webkit-box-ordinal-group: 6;
-  -moz-box-ordinal-group: 6;
-  -o-box-ordinal-group: 6;
-  -ms-flex-order: 6;
-  -webkit-order: 6;
-  order: 6;
-}
-.page .card-webinfo {
-  -webkit-box-ordinal-group: 7;
-  -moz-box-ordinal-group: 7;
-  -o-box-ordinal-group: 7;
-  -ms-flex-order: 7;
-  -webkit-order: 7;
-  order: 7;
-}
 @-moz-keyframes more-btn-move {
   0%, 100% {
     -webkit-transform: translateX(0);
