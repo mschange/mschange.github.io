@@ -1,6 +1,351 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>第 01 课：FastAPI 基础路由与参数</title>
+    <url>/posts/fastapi-lesson01-routing-params/</url>
+    <content><![CDATA[<h1 id="第-01-课：FastAPI-基础路由与参数"><a href="#第-01-课：FastAPI-基础路由与参数" class="headerlink" title="第 01 课：FastAPI 基础路由与参数"></a>第 01 课：FastAPI 基础路由与参数</h1><h2 id="从-0-到-1-完整实现指南"><a href="#从-0-到-1-完整实现指南" class="headerlink" title="从 0 到 1 完整实现指南"></a>从 0 到 1 完整实现指南</h2><hr>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li>一、FastAPI 前置知识</li>
+<li>二、课程目录结构</li>
+<li>三、第一个 FastAPI 应用</li>
+<li>四、路由基础</li>
+<li>五、路径参数</li>
+<li>六、查询参数</li>
+<li>七、路径参数 vs 查询参数</li>
+<li>八、完整可运行代码</li>
+<li>九、测试命令</li>
+<li>十、关键要点总结</li>
+<li>依赖安装</li>
+</ul>
+<hr>
+<h2 id="一、FastAPI-前置知识"><a href="#一、FastAPI-前置知识" class="headerlink" title="一、FastAPI 前置知识"></a>一、FastAPI 前置知识</h2><p>在开始学习 FastAPI 之前，你需要了解以下基础知识：</p>
+<h3 id="1-1-Python-基础要求"><a href="#1-1-Python-基础要求" class="headerlink" title="1.1 Python 基础要求"></a>1.1 Python 基础要求</h3><table>
+<thead>
+<tr>
+<th>知识点</th>
+<th>重要程度</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Python 3.10+</td>
+<td>必须</td>
+<td>FastAPI 使用新语法（<code>match</code>、<code>X | Y</code> 类型联合）</td>
+</tr>
+<tr>
+<td>类型注解</td>
+<td>必须</td>
+<td><code>str</code>, <code>int</code>, <code>List[str]</code>, <code>Optional[int]</code></td>
+</tr>
+<tr>
+<td>装饰器</td>
+<td>必须</td>
+<td><code>@app.get(&quot;/&quot;)</code> 就是装饰器</td>
+</tr>
+<tr>
+<td>异步编程</td>
+<td>重要</td>
+<td><code>async def</code>, <code>await</code> 关键字</td>
+</tr>
+<tr>
+<td>字典操作</td>
+<td>必须</td>
+<td><code>**dict</code> 解包、<code>.get()</code>、<code>.items()</code></td>
+</tr>
+<tr>
+<td>列表推导式</td>
+<td>重要</td>
+<td><code>[x for x in items]</code></td>
+</tr>
+<tr>
+<td>虚拟环境</td>
+<td>必须</td>
+<td><code>python -m venv venv</code></td>
+</tr>
+</tbody></table>
+<h3 id="1-2-类型注解速查"><a href="#1-2-类型注解速查" class="headerlink" title="1.2 类型注解速查"></a>1.2 类型注解速查</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 基础类型</span></span><br><span class="line">name: <span class="built_in">str</span> = <span class="string">&quot;张三&quot;</span></span><br><span class="line">age: <span class="built_in">int</span> = <span class="number">25</span></span><br><span class="line">price: <span class="built_in">float</span> = <span class="number">89.9</span></span><br><span class="line">is_active: <span class="built_in">bool</span> = <span class="literal">True</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 容器类型</span></span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">List</span>, <span class="type">Dict</span>, <span class="type">Optional</span>, <span class="type">Tuple</span></span><br><span class="line"></span><br><span class="line">names: <span class="type">List</span>[<span class="built_in">str</span>] = [<span class="string">&quot;张三&quot;</span>, <span class="string">&quot;李四&quot;</span>]           <span class="comment"># 字符串列表</span></span><br><span class="line">scores: <span class="type">Dict</span>[<span class="built_in">str</span>, <span class="built_in">int</span>] = &#123;<span class="string">&quot;数学&quot;</span>: <span class="number">90</span>&#125;         <span class="comment"># 字典</span></span><br><span class="line">user: <span class="type">Optional</span>[<span class="built_in">str</span>] = <span class="literal">None</span>                    <span class="comment"># 可选（可以是 str 或 None）</span></span><br><span class="line">point: <span class="type">Tuple</span>[<span class="built_in">float</span>, <span class="built_in">float</span>] = (<span class="number">1.0</span>, <span class="number">2.0</span>)      <span class="comment"># 元组</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Python 3.10+ 新语法</span></span><br><span class="line">user: <span class="built_in">str</span> | <span class="literal">None</span> = <span class="literal">None</span>      <span class="comment"># 等价于 Optional[str]</span></span><br><span class="line">names: <span class="built_in">list</span>[<span class="built_in">str</span>] = [<span class="string">&quot;张三&quot;</span>]   <span class="comment"># 等价于 List[str]</span></span><br><span class="line">scores: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">int</span>] = &#123;&#125;   <span class="comment"># 等价于 Dict[str, int]</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="1-3-装饰器原理"><a href="#1-3-装饰器原理" class="headerlink" title="1.3 装饰器原理"></a>1.3 装饰器原理</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 装饰器本质：用函数包装函数</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">my_decorator</span>(<span class="params">func</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">wrapper</span>(<span class="params">*args, **kwargs</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;执行前&quot;</span>)</span><br><span class="line">        result = func(*args, **kwargs)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;执行后&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> result</span><br><span class="line">    <span class="keyword">return</span> wrapper</span><br><span class="line"></span><br><span class="line"><span class="meta">@my_decorator</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">say_hello</span>():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Hello!&quot;</span>)</span><br><span class="line"></span><br><span class="line">say_hello()</span><br><span class="line"><span class="comment"># 输出：</span></span><br><span class="line"><span class="comment"># 执行前</span></span><br><span class="line"><span class="comment"># Hello!</span></span><br><span class="line"><span class="comment"># 执行后</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># FastAPI 的路由就是装饰器</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&quot;</span></span>)        </span><span class="comment"># ← 装饰器</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_books</span>():     <span class="comment"># ← 被装饰的函数</span></span><br><span class="line">    <span class="keyword">return</span> [&#123;<span class="string">&quot;id&quot;</span>: <span class="number">1</span>&#125;]</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-4-异步编程基础"><a href="#1-4-异步编程基础" class="headerlink" title="1.4 异步编程基础"></a>1.4 异步编程基础</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> asyncio</span><br><span class="line"></span><br><span class="line"><span class="comment"># 同步函数：阻塞执行</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">sync_hello</span>():</span><br><span class="line">    <span class="keyword">import</span> time</span><br><span class="line">    time.sleep(<span class="number">1</span>)  <span class="comment"># 阻塞 1 秒，整个线程卡住</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;Hello&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 异步函数：非阻塞</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">async_hello</span>():</span><br><span class="line">    <span class="keyword">await</span> asyncio.sleep(<span class="number">1</span>)  <span class="comment"># 等待 1 秒，但线程可以处理其他任务</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;Hello&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 运行异步函数</span></span><br><span class="line">asyncio.run(async_hello())</span><br></pre></td></tr></table></figure>
+
+<p><strong>同步 vs 异步对比：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">同步（单线程）：</span><br><span class="line">任务A: [████████████] 1秒</span><br><span class="line">任务B:               [████████████] 1秒</span><br><span class="line">总时间: 2秒</span><br><span class="line"></span><br><span class="line">异步（单线程）：</span><br><span class="line">任务A: [██    ] → 切换 → [    ██] 0.5秒 + 0.5秒</span><br><span class="line">任务B:   [████████████]      0.5秒 + 0.5秒</span><br><span class="line">总时间: 1秒</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-5-Web-基础概念"><a href="#1-5-Web-基础概念" class="headerlink" title="1.5 Web 基础概念"></a>1.5 Web 基础概念</h3><h4 id="HTTP-方法"><a href="#HTTP-方法" class="headerlink" title="HTTP 方法"></a>HTTP 方法</h4><table>
+<thead>
+<tr>
+<th>方法</th>
+<th>用途</th>
+<th>幂等性</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET</code></td>
+<td>获取数据</td>
+<td>是</td>
+<td>获取书籍列表</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td>创建数据</td>
+<td>否</td>
+<td>新增一本书</td>
+</tr>
+<tr>
+<td><code>PUT</code></td>
+<td>全量更新</td>
+<td>是</td>
+<td>更新整本书信息</td>
+</tr>
+<tr>
+<td><code>PATCH</code></td>
+<td>部分更新</td>
+<td>否</td>
+<td>只更新价格</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td>删除数据</td>
+<td>是</td>
+<td>删除一本书</td>
+</tr>
+</tbody></table>
+<h4 id="HTTP-状态码"><a href="#HTTP-状态码" class="headerlink" title="HTTP 状态码"></a>HTTP 状态码</h4><table>
+<thead>
+<tr>
+<th>状态码</th>
+<th>含义</th>
+<th>使用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>200</code></td>
+<td>OK</td>
+<td>请求成功</td>
+</tr>
+<tr>
+<td><code>201</code></td>
+<td>Created</td>
+<td>创建成功</td>
+</tr>
+<tr>
+<td><code>204</code></td>
+<td>No Content</td>
+<td>删除成功（无返回体）</td>
+</tr>
+<tr>
+<td><code>400</code></td>
+<td>Bad Request</td>
+<td>请求参数错误</td>
+</tr>
+<tr>
+<td><code>404</code></td>
+<td>Not Found</td>
+<td>资源不存在</td>
+</tr>
+<tr>
+<td><code>422</code></td>
+<td>Unprocessable Entity</td>
+<td>数据验证失败</td>
+</tr>
+<tr>
+<td><code>500</code></td>
+<td>Internal Server Error</td>
+<td>服务器内部错误</td>
+</tr>
+</tbody></table>
+<h4 id="RESTful-API-设计规范"><a href="#RESTful-API-设计规范" class="headerlink" title="RESTful API 设计规范"></a>RESTful API 设计规范</h4><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">GET    /books/          # 获取书籍列表</span><br><span class="line">GET    /books/&#123;id&#125;      # 获取单本书籍</span><br><span class="line">POST   /books/          # 创建书籍</span><br><span class="line">PUT    /books/&#123;id&#125;      # 全量更新书籍</span><br><span class="line">PATCH  /books/&#123;id&#125;      # 部分更新书籍</span><br><span class="line">DELETE /books/&#123;id&#125;      # 删除书籍</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-6-需要安装的包"><a href="#1-6-需要安装的包" class="headerlink" title="1.6 需要安装的包"></a>1.6 需要安装的包</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 创建虚拟环境</span></span><br><span class="line">python -m venv venv</span><br><span class="line"><span class="built_in">source</span> venv/bin/activate  <span class="comment"># macOS/Linux</span></span><br><span class="line"><span class="comment"># venv\Scripts\activate   # Windows</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装依赖</span></span><br><span class="line">pip install fastapi uvicorn[standard] pydantic</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>包名</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>fastapi</code></td>
+<td>Web 框架本体</td>
+</tr>
+<tr>
+<td><code>uvicorn</code></td>
+<td>ASGI 服务器（运行 FastAPI）</td>
+</tr>
+<tr>
+<td><code>pydantic</code></td>
+<td>数据验证（FastAPI 内置依赖）</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="二、课程目录结构"><a href="#二、课程目录结构" class="headerlink" title="二、课程目录结构"></a>二、课程目录结构</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">01-fastapi基础路由与参数/</span><br><span class="line">└── README.md              # 本文件（含完整代码与依赖说明）</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="三、第一个-FastAPI-应用"><a href="#三、第一个-FastAPI-应用" class="headerlink" title="三、第一个 FastAPI 应用"></a>三、第一个 FastAPI 应用</h2><h3 id="3-1-Hello-World"><a href="#3-1-Hello-World" class="headerlink" title="3.1 Hello World"></a>3.1 Hello World</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># main.py</span></span><br><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI</span><br><span class="line"></span><br><span class="line">app = FastAPI()</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">root</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;Hello World&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-2-启动方式"><a href="#3-2-启动方式" class="headerlink" title="3.2 启动方式"></a>3.2 启动方式</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">uvicorn main:app --reload</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>main:app</code></td>
+<td><code>main.py</code> 文件中的 <code>app</code> 对象</td>
+</tr>
+<tr>
+<td><code>--reload</code></td>
+<td>代码修改后自动重启（开发环境用）</td>
+</tr>
+<tr>
+<td><code>--host 0.0.0.0</code></td>
+<td>允许外部访问</td>
+</tr>
+<tr>
+<td><code>--port 8000</code></td>
+<td>指定端口（默认 8000）</td>
+</tr>
+</tbody></table>
+<h3 id="3-3-自动生成的文档"><a href="#3-3-自动生成的文档" class="headerlink" title="3.3 自动生成的文档"></a>3.3 自动生成的文档</h3><p>启动后访问：</p>
+<ul>
+<li><strong>Swagger UI</strong>：<a href="http://127.0.0.1:8000/docs">http://127.0.0.1:8000/docs</a></li>
+<li><strong>ReDoc</strong>：<a href="http://127.0.0.1:8000/redoc">http://127.0.0.1:8000/redoc</a></li>
+<li><strong>OpenAPI JSON</strong>：<a href="http://127.0.0.1:8000/openapi.json">http://127.0.0.1:8000/openapi.json</a></li>
+</ul>
+<hr>
+<h2 id="四、路由基础"><a href="#四、路由基础" class="headerlink" title="四、路由基础"></a>四、路由基础</h2><h3 id="4-1-装饰器路由"><a href="#4-1-装饰器路由" class="headerlink" title="4.1 装饰器路由"></a>4.1 装饰器路由</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI</span><br><span class="line"></span><br><span class="line">app = FastAPI()</span><br><span class="line"></span><br><span class="line"><span class="comment"># GET 请求</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">root</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;首页&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_books</span>():</span><br><span class="line">    <span class="keyword">return</span> [&#123;<span class="string">&quot;id&quot;</span>: <span class="number">1</span>, <span class="string">&quot;bookname&quot;</span>: <span class="string">&quot;Python编程&quot;</span>&#125;]</span><br><span class="line"></span><br><span class="line"><span class="comment"># POST 请求</span></span><br><span class="line"><span class="meta">@app.post(<span class="params"><span class="string">&quot;/books/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">create_book</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;创建成功&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># PUT 请求</span></span><br><span class="line"><span class="meta">@app.put(<span class="params"><span class="string">&quot;/books/&#123;id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">update_book</span>(<span class="params"><span class="built_in">id</span>: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">f&quot;更新书籍 <span class="subst">&#123;<span class="built_in">id</span>&#125;</span>&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># DELETE 请求</span></span><br><span class="line"><span class="meta">@app.delete(<span class="params"><span class="string">&quot;/books/&#123;id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">delete_book</span>(<span class="params"><span class="built_in">id</span>: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">f&quot;删除书籍 <span class="subst">&#123;<span class="built_in">id</span>&#125;</span>&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-2-路由执行流程"><a href="#4-2-路由执行流程" class="headerlink" title="4.2 路由执行流程"></a>4.2 路由执行流程</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">客户端请求: GET /books/</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">FastAPI 路由匹配</span><br><span class="line">    │  遍历所有 @app.get/post/put/delete</span><br><span class="line">    │  找到匹配的路径 + 方法</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">参数解析</span><br><span class="line">    │  路径参数 → 从 URL 提取</span><br><span class="line">    │  查询参数 → 从 ?key=value 提取</span><br><span class="line">    │  请求体 → 从 JSON body 提取</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">类型验证</span><br><span class="line">    │  Pydantic 自动验证参数类型</span><br><span class="line">    │  验证失败 → 返回 422</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">执行接口函数</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">返回响应（自动序列化为 JSON）</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="五、路径参数"><a href="#五、路径参数" class="headerlink" title="五、路径参数"></a>五、路径参数</h2><h3 id="5-1-基础路径参数"><a href="#5-1-基础路径参数" class="headerlink" title="5.1 基础路径参数"></a>5.1 基础路径参数</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 路径参数：在 URL 路径中定义</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&#123;book_id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_book</span>(<span class="params">book_id: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    访问: GET /books/1</span></span><br><span class="line"><span class="string">    book_id = 1</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;book_id&quot;</span>: book_id&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>工作原理：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">URL: /books/1</span><br><span class="line">         ↑</span><br><span class="line">    &#123;book_id&#125; = 1</span><br><span class="line">    类型注解 int → 自动转换 &quot;1&quot; → 1</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-2-多个路径参数"><a href="#5-2-多个路径参数" class="headerlink" title="5.2 多个路径参数"></a>5.2 多个路径参数</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&#123;book_id&#125;/chapters/&#123;chapter_id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_chapter</span>(<span class="params">book_id: <span class="built_in">int</span>, chapter_id: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    访问: GET /books/1/chapters/3</span></span><br><span class="line"><span class="string">    book_id = 1, chapter_id = 3</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;book_id&quot;</span>: book_id, <span class="string">&quot;chapter_id&quot;</span>: chapter_id&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-3-路径参数类型验证"><a href="#5-3-路径参数类型验证" class="headerlink" title="5.3 路径参数类型验证"></a>5.3 路径参数类型验证</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 自动类型转换和验证</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/items/&#123;item_id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_item</span>(<span class="params">item_id: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;item_id&quot;</span>: item_id&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 访问 /items/abc → 422 错误（abc 不是 int）</span></span><br><span class="line"><span class="comment"># 访问 /items/123 → 200，item_id = 123</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="5-4-使用-Enum-限制路径参数"><a href="#5-4-使用-Enum-限制路径参数" class="headerlink" title="5.4 使用 Enum 限制路径参数"></a>5.4 使用 Enum 限制路径参数</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> enum <span class="keyword">import</span> Enum</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BookCategory</span>(<span class="built_in">str</span>, Enum):</span><br><span class="line">    PYTHON = <span class="string">&quot;python&quot;</span></span><br><span class="line">    JAVA = <span class="string">&quot;java&quot;</span></span><br><span class="line">    GO = <span class="string">&quot;go&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/category/&#123;category&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_books_by_category</span>(<span class="params">category: BookCategory</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    访问: GET /books/category/python → 成功</span></span><br><span class="line"><span class="string">    访问: GET /books/category/rust  → 422 错误（不在枚举中）</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;category&quot;</span>: category, <span class="string">&quot;value&quot;</span>: category.value&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="六、查询参数"><a href="#六、查询参数" class="headerlink" title="六、查询参数"></a>六、查询参数</h2><h3 id="6-1-基础查询参数"><a href="#6-1-基础查询参数" class="headerlink" title="6.1 基础查询参数"></a>6.1 基础查询参数</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 查询参数：不在路径中的函数参数</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">list_books</span>(<span class="params">skip: <span class="built_in">int</span> = <span class="number">0</span>, limit: <span class="built_in">int</span> = <span class="number">10</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    访问: GET /books/?skip=0&amp;limit=10</span></span><br><span class="line"><span class="string">    skip = 0, limit = 10</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;skip&quot;</span>: skip, <span class="string">&quot;limit&quot;</span>: limit&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>工作原理：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">URL: /books/?skip=5&amp;limit=20</span><br><span class="line">              ↑           ↑</span><br><span class="line">         skip=5      limit=20</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-2-可选查询参数"><a href="#6-2-可选查询参数" class="headerlink" title="6.2 可选查询参数"></a>6.2 可选查询参数</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Optional</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">search_books</span>(<span class="params"></span></span><br><span class="line"><span class="params">    keyword: <span class="type">Optional</span>[<span class="built_in">str</span>] = <span class="literal">None</span>,    <span class="comment"># 可选参数</span></span></span><br><span class="line"><span class="params">    category: <span class="type">Optional</span>[<span class="built_in">str</span>] = <span class="literal">None</span>,   <span class="comment"># 可选参数</span></span></span><br><span class="line"><span class="params">    page: <span class="built_in">int</span> = <span class="number">1</span>,                     <span class="comment"># 有默认值 = 可选</span></span></span><br><span class="line"><span class="params"></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    访问: GET /books/                    → keyword=None, page=1</span></span><br><span class="line"><span class="string">    访问: GET /books/?keyword=Python     → keyword=&quot;Python&quot;, page=1</span></span><br><span class="line"><span class="string">    访问: GET /books/?keyword=Python&amp;page=2 → keyword=&quot;Python&quot;, page=2</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;keyword&quot;</span>: keyword, <span class="string">&quot;category&quot;</span>: category, <span class="string">&quot;page&quot;</span>: page&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-3-查询参数类型转换"><a href="#6-3-查询参数类型转换" class="headerlink" title="6.3 查询参数类型转换"></a>6.3 查询参数类型转换</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">list_books</span>(<span class="params"></span></span><br><span class="line"><span class="params">    price_min: <span class="built_in">float</span> = <span class="number">0</span>,       <span class="comment"># 自动转 float</span></span></span><br><span class="line"><span class="params">    is_active: <span class="built_in">bool</span> = <span class="literal">True</span>,     <span class="comment"># 自动转 bool</span></span></span><br><span class="line"><span class="params">    tags: <span class="built_in">list</span>[<span class="built_in">str</span>] = [],       <span class="comment"># 自动转列表</span></span></span><br><span class="line"><span class="params"></span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;price_min&quot;</span>: price_min, <span class="string">&quot;is_active&quot;</span>: is_active, <span class="string">&quot;tags&quot;</span>: tags&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># GET /books/?price_min=50.5&amp;is_active=true&amp;tags=python&amp;tags=web</span></span><br><span class="line"><span class="comment"># price_min=50.5, is_active=True, tags=[&quot;python&quot;, &quot;web&quot;]</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="七、路径参数-vs-查询参数"><a href="#七、路径参数-vs-查询参数" class="headerlink" title="七、路径参数 vs 查询参数"></a>七、路径参数 vs 查询参数</h2><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&#123;book_id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_book</span>(<span class="params"></span></span><br><span class="line"><span class="params">    book_id: <span class="built_in">int</span>,              <span class="comment"># ← 路径参数（在 URL 路径中）</span></span></span><br><span class="line"><span class="params">    include_chapters: <span class="built_in">bool</span> = <span class="literal">False</span>  <span class="comment"># ← 查询参数（不在路径中）</span></span></span><br><span class="line"><span class="params"></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    判断规则：</span></span><br><span class="line"><span class="string">    - 在路径 &#123;xxx&#125; 中定义的 → 路径参数</span></span><br><span class="line"><span class="string">    - 函数参数但不在路径中 → 查询参数</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;book_id&quot;</span>: book_id, <span class="string">&quot;include_chapters&quot;</span>: include_chapters&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># GET /books/1?include_chapters=true</span></span><br><span class="line"><span class="comment"># book_id=1（路径参数）, include_chapters=True（查询参数）</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>对比表：</strong></p>
+<table>
+<thead>
+<tr>
+<th>对比项</th>
+<th>路径参数</th>
+<th>查询参数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>位置</td>
+<td>URL 路径中 <code>&#123;id&#125;</code></td>
+<td>URL 查询字符串 <code>?key=value</code></td>
+</tr>
+<tr>
+<td>是否必填</td>
+<td>必填</td>
+<td>有默认值则可选</td>
+</tr>
+<tr>
+<td>用途</td>
+<td>标识资源</td>
+<td>过滤、排序、分页</td>
+</tr>
+<tr>
+<td>示例</td>
+<td><code>/books/1</code></td>
+<td><code>/books/?page=2</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="八、完整可运行代码"><a href="#八、完整可运行代码" class="headerlink" title="八、完整可运行代码"></a>八、完整可运行代码</h2><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">第 01 课：FastAPI 基础路由与参数</span></span><br><span class="line"><span class="string">完整可运行代码</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">from</span> enum <span class="keyword">import</span> Enum</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Optional</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI, Query, Path</span><br><span class="line"></span><br><span class="line">app = FastAPI(</span><br><span class="line">    title=<span class="string">&quot;第01课：FastAPI 基础路由与参数&quot;</span>,</span><br><span class="line">    description=<span class="string">&quot;学习路由、路径参数、查询参数&quot;</span>,</span><br><span class="line">    version=<span class="string">&quot;1.0.0&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---- 模拟数据 ----</span></span><br><span class="line">fake_books = [</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">1</span>, <span class="string">&quot;bookname&quot;</span>: <span class="string">&quot;Python编程&quot;</span>, <span class="string">&quot;author&quot;</span>: <span class="string">&quot;张三&quot;</span>, <span class="string">&quot;price&quot;</span>: <span class="number">89.9</span>, <span class="string">&quot;category&quot;</span>: <span class="string">&quot;python&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">2</span>, <span class="string">&quot;bookname&quot;</span>: <span class="string">&quot;Java编程&quot;</span>, <span class="string">&quot;author&quot;</span>: <span class="string">&quot;李四&quot;</span>, <span class="string">&quot;price&quot;</span>: <span class="number">79.9</span>, <span class="string">&quot;category&quot;</span>: <span class="string">&quot;java&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">3</span>, <span class="string">&quot;bookname&quot;</span>: <span class="string">&quot;Go编程&quot;</span>, <span class="string">&quot;author&quot;</span>: <span class="string">&quot;王五&quot;</span>, <span class="string">&quot;price&quot;</span>: <span class="number">69.9</span>, <span class="string">&quot;category&quot;</span>: <span class="string">&quot;go&quot;</span>&#125;,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="comment"># 1. 首页</span></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">root</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;第01课：FastAPI 基础路由与参数，访问 /docs 查看文档&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="comment"># 2. 路径参数演示</span></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&#123;book_id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_book</span>(<span class="params">book_id: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;通过 ID 获取单本书籍&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">for</span> book <span class="keyword">in</span> fake_books:</span><br><span class="line">        <span class="keyword">if</span> book[<span class="string">&quot;id&quot;</span>] == book_id:</span><br><span class="line">            <span class="keyword">return</span> book</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;error&quot;</span>: <span class="string">&quot;书籍不存在&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&#123;book_id&#125;/chapters/&#123;chapter_id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_chapter</span>(<span class="params">book_id: <span class="built_in">int</span>, chapter_id: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;多路径参数演示&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;book_id&quot;</span>: book_id, <span class="string">&quot;chapter_id&quot;</span>: chapter_id&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="comment"># 3. 查询参数演示</span></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">list_books</span>(<span class="params"></span></span><br><span class="line"><span class="params">    skip: <span class="built_in">int</span> = <span class="number">0</span>,</span></span><br><span class="line"><span class="params">    limit: <span class="built_in">int</span> = <span class="number">10</span>,</span></span><br><span class="line"><span class="params">    keyword: <span class="type">Optional</span>[<span class="built_in">str</span>] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params"></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;查询参数：分页 + 搜索&quot;&quot;&quot;</span></span><br><span class="line">    books = fake_books</span><br><span class="line">    <span class="keyword">if</span> keyword:</span><br><span class="line">        books = [b <span class="keyword">for</span> b <span class="keyword">in</span> books <span class="keyword">if</span> keyword.lower() <span class="keyword">in</span> b[<span class="string">&quot;bookname&quot;</span>].lower()]</span><br><span class="line">    <span class="keyword">return</span> books[skip:skip + limit]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="comment"># 4. Enum 路径参数</span></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BookCategory</span>(<span class="built_in">str</span>, Enum):</span><br><span class="line">    PYTHON = <span class="string">&quot;python&quot;</span></span><br><span class="line">    JAVA = <span class="string">&quot;java&quot;</span></span><br><span class="line">    GO = <span class="string">&quot;go&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/category/&#123;category&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_by_category</span>(<span class="params">category: BookCategory</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;限制路径参数值&quot;&quot;&quot;</span></span><br><span class="line">    filtered = [b <span class="keyword">for</span> b <span class="keyword">in</span> fake_books <span class="keyword">if</span> b[<span class="string">&quot;category&quot;</span>] == category.value]</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;category&quot;</span>: category.value, <span class="string">&quot;count&quot;</span>: <span class="built_in">len</span>(filtered), <span class="string">&quot;books&quot;</span>: filtered&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="comment"># 5. 健康检查</span></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/health&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">health</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;status&quot;</span>: <span class="string">&quot;ok&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<p>保存为 <code>main.py</code> 后，运行：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">uvicorn main:app --reload</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="九、测试命令"><a href="#九、测试命令" class="headerlink" title="九、测试命令"></a>九、测试命令</h2><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 首页</span></span><br><span class="line">curl http://127.0.0.1:8000/</span><br><span class="line"></span><br><span class="line"><span class="comment"># 路径参数</span></span><br><span class="line">curl http://127.0.0.1:8000/books/1</span><br><span class="line">curl http://127.0.0.1:8000/books/1/chapters/3</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查询参数</span></span><br><span class="line">curl <span class="string">&quot;http://127.0.0.1:8000/books/?skip=0&amp;limit=2&quot;</span></span><br><span class="line">curl <span class="string">&quot;http://127.0.0.1:8000/books/?keyword=Python&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Enum 路径参数</span></span><br><span class="line">curl http://127.0.0.1:8000/books/category/python</span><br><span class="line"></span><br><span class="line"><span class="comment"># 健康检查</span></span><br><span class="line">curl http://127.0.0.1:8000/health</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="十、关键要点总结"><a href="#十、关键要点总结" class="headerlink" title="十、关键要点总结"></a>十、关键要点总结</h2><table>
+<thead>
+<tr>
+<th>知识点</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>FastAPI()</code></td>
+<td>创建应用实例</td>
+</tr>
+<tr>
+<td><code>@app.get/post/put/delete</code></td>
+<td>路由装饰器</td>
+</tr>
+<tr>
+<td>路径参数</td>
+<td><code>&#123;param&#125;</code> 定义，函数参数同名接收</td>
+</tr>
+<tr>
+<td>查询参数</td>
+<td>函数参数但不在路径中</td>
+</tr>
+<tr>
+<td>类型注解</td>
+<td>自动验证和转换</td>
+</tr>
+<tr>
+<td><code>async def</code></td>
+<td>异步接口函数</td>
+</tr>
+<tr>
+<td><code>/docs</code></td>
+<td>自动生成的 Swagger 文档</td>
+</tr>
+<tr>
+<td>Enum</td>
+<td>限制路径参数的可选值</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="依赖安装"><a href="#依赖安装" class="headerlink" title="依赖安装"></a>依赖安装</h2><figure class="highlight txt"><table><tr><td class="code"><pre><span class="line">fastapi==0.115.0</span><br><span class="line">uvicorn[standard]==0.30.0</span><br><span class="line">pydantic==2.9.0</span><br></pre></td></tr></table></figure>
+
+<p>或使用 pip 一键安装：</p>
+<figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">pip install fastapi==0.115.0 <span class="string">&quot;uvicorn[standard]==0.30.0&quot;</span> pydantic==2.9.0</span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>Python</category>
+      </categories>
+      <tags>
+        <tag>Python</tag>
+        <tag>FastAPI</tag>
+        <tag>后端</tag>
+        <tag>Web开发</tag>
+        <tag>学习笔记</tag>
+      </tags>
+  </entry>
+  <entry>
     <title>My Monorepos — 从 0 到 1 完整实现指南</title>
     <url>/posts/my-monorepos-guide/</url>
     <content><![CDATA[<h1 id="My-Monorepos-—-从-0-到-1-完整实现指南"><a href="#My-Monorepos-—-从-0-到-1-完整实现指南" class="headerlink" title="My Monorepos — 从 0 到 1 完整实现指南"></a>My Monorepos — 从 0 到 1 完整实现指南</h1><blockquote>
@@ -1960,9 +2305,9 @@
       </categories>
       <tags>
         <tag>Python</tag>
+        <tag>学习笔记</tag>
         <tag>编程</tag>
         <tag>基础语法</tag>
-        <tag>学习笔记</tag>
       </tags>
   </entry>
   <entry>
@@ -2763,8 +3108,8 @@
       </categories>
       <tags>
         <tag>Python</tag>
-        <tag>编程</tag>
         <tag>学习笔记</tag>
+        <tag>编程</tag>
         <tag>面向对象</tag>
       </tags>
   </entry>

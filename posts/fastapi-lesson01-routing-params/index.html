@@ -1,0 +1,626 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>第 01 课：FastAPI 基础路由与参数 | 筎柒的个人笔记</title><meta name="author" content="筎柒"><meta name="copyright" content="筎柒"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="从零学习 FastAPI 基础路由、路径参数与查询参数，包含前置知识、完整可运行代码与测试命令。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="第 01 课：FastAPI 基础路由与参数">
+<meta property="og:url" content="https://mschange.github.io/posts/fastapi-lesson01-routing-params/index.html">
+<meta property="og:site_name" content="筎柒的个人笔记">
+<meta property="og:description" content="从零学习 FastAPI 基础路由、路径参数与查询参数，包含前置知识、完整可运行代码与测试命令。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://mschange.github.io/img/post-cover.jpg">
+<meta property="article:published_time" content="2026-08-24T13:30:00.000Z">
+<meta property="article:modified_time" content="2026-08-24T13:30:00.000Z">
+<meta property="article:author" content="筎柒">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="FastAPI">
+<meta property="article:tag" content="后端">
+<meta property="article:tag" content="Web开发">
+<meta property="article:tag" content="学习笔记">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://mschange.github.io/img/post-cover.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "第 01 课：FastAPI 基础路由与参数",
+  "url": "https://mschange.github.io/posts/fastapi-lesson01-routing-params/",
+  "image": "https://mschange.github.io/img/post-cover.jpg",
+  "datePublished": "2026-08-24T13:30:00.000Z",
+  "dateModified": "2026-08-24T13:30:00.000Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "筎柒",
+      "url": "https://mschange.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.ico"><link rel="canonical" href="https://mschange.github.io/posts/fastapi-lesson01-routing-params/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.7.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@6.1.14/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        const data = { value }
+
+        if (ttl != null) {
+          data.expiry = Date.now() + ttl * 86400000
+        }
+
+        localStorage.setItem(key, JSON.stringify(data))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return
+
+        try {
+          const data = JSON.parse(itemStr)
+
+          if (data.expiry && Date.now() > data.expiry) {
+            localStorage.removeItem(key)
+            return
+          }
+
+          return data.value
+        } catch {
+          localStorage.removeItem(key)
+        }
+      }
+    }
+
+    const scriptCache = new Map()
+    const cssCache = new Map()
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => {
+        if (scriptCache.has(url)) {
+          return scriptCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+
+          script.src = url
+          script.async = true
+
+          for (const key in attr) {
+            script.setAttribute(key, attr[key])
+          }
+
+          script.onload = resolve
+          script.onerror = reject
+
+          document.head.appendChild(script)
+        })
+
+        scriptCache.set(url, promise)
+
+        return promise
+      },
+      getCSS: (url, id) => {
+        if (cssCache.has(url)) {
+          return cssCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const link = document.createElement('link')
+
+          link.rel = 'stylesheet'
+          link.href = url
+
+          if (id) {
+            link.id = id
+          }
+
+          link.onload = resolve
+          link.onerror = reject
+
+          document.head.appendChild(link)
+        })
+
+        cssCache.set(url, promise)
+
+        return promise
+      },
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!true && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+      const activateDarkMode = () => {
+        document.documentElement.dataset.theme = 'dark'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.dataset.theme = 'light'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '第 01 课：FastAPI 基础路由与参数',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (true) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div class="bg-animation" id="web_bg" style="background-image: url(/img/background.jpg);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/avatar.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">4</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">15</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="not-top-img fixed" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">筎柒的个人笔记</span></a><a class="nav-page-title" href="/"><span class="site-name">第 01 课：FastAPI 基础路由与参数</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav></header><main class="layout" id="content-inner"><div id="post"><div id="post-info"><h1 class="post-title">第 01 课：FastAPI 基础路由与参数</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">发表于</span><time datetime="2026-08-24T13:30:00.000Z" title="发表于 2026-08-24 21:30:00">2026-08-24</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Python/">Python</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">2.7k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>12分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div><article class="container post-content" id="article-container"><h1 id="第-01-课：FastAPI-基础路由与参数"><a href="#第-01-课：FastAPI-基础路由与参数" class="headerlink" title="第 01 课：FastAPI 基础路由与参数"></a>第 01 课：FastAPI 基础路由与参数</h1><h2 id="从-0-到-1-完整实现指南"><a href="#从-0-到-1-完整实现指南" class="headerlink" title="从 0 到 1 完整实现指南"></a>从 0 到 1 完整实现指南</h2><hr>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li>一、FastAPI 前置知识</li>
+<li>二、课程目录结构</li>
+<li>三、第一个 FastAPI 应用</li>
+<li>四、路由基础</li>
+<li>五、路径参数</li>
+<li>六、查询参数</li>
+<li>七、路径参数 vs 查询参数</li>
+<li>八、完整可运行代码</li>
+<li>九、测试命令</li>
+<li>十、关键要点总结</li>
+<li>依赖安装</li>
+</ul>
+<hr>
+<h2 id="一、FastAPI-前置知识"><a href="#一、FastAPI-前置知识" class="headerlink" title="一、FastAPI 前置知识"></a>一、FastAPI 前置知识</h2><p>在开始学习 FastAPI 之前，你需要了解以下基础知识：</p>
+<h3 id="1-1-Python-基础要求"><a href="#1-1-Python-基础要求" class="headerlink" title="1.1 Python 基础要求"></a>1.1 Python 基础要求</h3><table>
+<thead>
+<tr>
+<th>知识点</th>
+<th>重要程度</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Python 3.10+</td>
+<td>必须</td>
+<td>FastAPI 使用新语法（<code>match</code>、<code>X | Y</code> 类型联合）</td>
+</tr>
+<tr>
+<td>类型注解</td>
+<td>必须</td>
+<td><code>str</code>, <code>int</code>, <code>List[str]</code>, <code>Optional[int]</code></td>
+</tr>
+<tr>
+<td>装饰器</td>
+<td>必须</td>
+<td><code>@app.get(&quot;/&quot;)</code> 就是装饰器</td>
+</tr>
+<tr>
+<td>异步编程</td>
+<td>重要</td>
+<td><code>async def</code>, <code>await</code> 关键字</td>
+</tr>
+<tr>
+<td>字典操作</td>
+<td>必须</td>
+<td><code>**dict</code> 解包、<code>.get()</code>、<code>.items()</code></td>
+</tr>
+<tr>
+<td>列表推导式</td>
+<td>重要</td>
+<td><code>[x for x in items]</code></td>
+</tr>
+<tr>
+<td>虚拟环境</td>
+<td>必须</td>
+<td><code>python -m venv venv</code></td>
+</tr>
+</tbody></table>
+<h3 id="1-2-类型注解速查"><a href="#1-2-类型注解速查" class="headerlink" title="1.2 类型注解速查"></a>1.2 类型注解速查</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 基础类型</span></span><br><span class="line">name: <span class="built_in">str</span> = <span class="string">&quot;张三&quot;</span></span><br><span class="line">age: <span class="built_in">int</span> = <span class="number">25</span></span><br><span class="line">price: <span class="built_in">float</span> = <span class="number">89.9</span></span><br><span class="line">is_active: <span class="built_in">bool</span> = <span class="literal">True</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 容器类型</span></span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">List</span>, <span class="type">Dict</span>, <span class="type">Optional</span>, <span class="type">Tuple</span></span><br><span class="line"></span><br><span class="line">names: <span class="type">List</span>[<span class="built_in">str</span>] = [<span class="string">&quot;张三&quot;</span>, <span class="string">&quot;李四&quot;</span>]           <span class="comment"># 字符串列表</span></span><br><span class="line">scores: <span class="type">Dict</span>[<span class="built_in">str</span>, <span class="built_in">int</span>] = &#123;<span class="string">&quot;数学&quot;</span>: <span class="number">90</span>&#125;         <span class="comment"># 字典</span></span><br><span class="line">user: <span class="type">Optional</span>[<span class="built_in">str</span>] = <span class="literal">None</span>                    <span class="comment"># 可选（可以是 str 或 None）</span></span><br><span class="line">point: <span class="type">Tuple</span>[<span class="built_in">float</span>, <span class="built_in">float</span>] = (<span class="number">1.0</span>, <span class="number">2.0</span>)      <span class="comment"># 元组</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Python 3.10+ 新语法</span></span><br><span class="line">user: <span class="built_in">str</span> | <span class="literal">None</span> = <span class="literal">None</span>      <span class="comment"># 等价于 Optional[str]</span></span><br><span class="line">names: <span class="built_in">list</span>[<span class="built_in">str</span>] = [<span class="string">&quot;张三&quot;</span>]   <span class="comment"># 等价于 List[str]</span></span><br><span class="line">scores: <span class="built_in">dict</span>[<span class="built_in">str</span>, <span class="built_in">int</span>] = &#123;&#125;   <span class="comment"># 等价于 Dict[str, int]</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="1-3-装饰器原理"><a href="#1-3-装饰器原理" class="headerlink" title="1.3 装饰器原理"></a>1.3 装饰器原理</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 装饰器本质：用函数包装函数</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">my_decorator</span>(<span class="params">func</span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">wrapper</span>(<span class="params">*args, **kwargs</span>):</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;执行前&quot;</span>)</span><br><span class="line">        result = func(*args, **kwargs)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">&quot;执行后&quot;</span>)</span><br><span class="line">        <span class="keyword">return</span> result</span><br><span class="line">    <span class="keyword">return</span> wrapper</span><br><span class="line"></span><br><span class="line"><span class="meta">@my_decorator</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">say_hello</span>():</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;Hello!&quot;</span>)</span><br><span class="line"></span><br><span class="line">say_hello()</span><br><span class="line"><span class="comment"># 输出：</span></span><br><span class="line"><span class="comment"># 执行前</span></span><br><span class="line"><span class="comment"># Hello!</span></span><br><span class="line"><span class="comment"># 执行后</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># FastAPI 的路由就是装饰器</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&quot;</span></span>)        </span><span class="comment"># ← 装饰器</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_books</span>():     <span class="comment"># ← 被装饰的函数</span></span><br><span class="line">    <span class="keyword">return</span> [&#123;<span class="string">&quot;id&quot;</span>: <span class="number">1</span>&#125;]</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-4-异步编程基础"><a href="#1-4-异步编程基础" class="headerlink" title="1.4 异步编程基础"></a>1.4 异步编程基础</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> asyncio</span><br><span class="line"></span><br><span class="line"><span class="comment"># 同步函数：阻塞执行</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">sync_hello</span>():</span><br><span class="line">    <span class="keyword">import</span> time</span><br><span class="line">    time.sleep(<span class="number">1</span>)  <span class="comment"># 阻塞 1 秒，整个线程卡住</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;Hello&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 异步函数：非阻塞</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">async_hello</span>():</span><br><span class="line">    <span class="keyword">await</span> asyncio.sleep(<span class="number">1</span>)  <span class="comment"># 等待 1 秒，但线程可以处理其他任务</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;Hello&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 运行异步函数</span></span><br><span class="line">asyncio.run(async_hello())</span><br></pre></td></tr></table></figure>
+
+<p><strong>同步 vs 异步对比：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">同步（单线程）：</span><br><span class="line">任务A: [████████████] 1秒</span><br><span class="line">任务B:               [████████████] 1秒</span><br><span class="line">总时间: 2秒</span><br><span class="line"></span><br><span class="line">异步（单线程）：</span><br><span class="line">任务A: [██    ] → 切换 → [    ██] 0.5秒 + 0.5秒</span><br><span class="line">任务B:   [████████████]      0.5秒 + 0.5秒</span><br><span class="line">总时间: 1秒</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-5-Web-基础概念"><a href="#1-5-Web-基础概念" class="headerlink" title="1.5 Web 基础概念"></a>1.5 Web 基础概念</h3><h4 id="HTTP-方法"><a href="#HTTP-方法" class="headerlink" title="HTTP 方法"></a>HTTP 方法</h4><table>
+<thead>
+<tr>
+<th>方法</th>
+<th>用途</th>
+<th>幂等性</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>GET</code></td>
+<td>获取数据</td>
+<td>是</td>
+<td>获取书籍列表</td>
+</tr>
+<tr>
+<td><code>POST</code></td>
+<td>创建数据</td>
+<td>否</td>
+<td>新增一本书</td>
+</tr>
+<tr>
+<td><code>PUT</code></td>
+<td>全量更新</td>
+<td>是</td>
+<td>更新整本书信息</td>
+</tr>
+<tr>
+<td><code>PATCH</code></td>
+<td>部分更新</td>
+<td>否</td>
+<td>只更新价格</td>
+</tr>
+<tr>
+<td><code>DELETE</code></td>
+<td>删除数据</td>
+<td>是</td>
+<td>删除一本书</td>
+</tr>
+</tbody></table>
+<h4 id="HTTP-状态码"><a href="#HTTP-状态码" class="headerlink" title="HTTP 状态码"></a>HTTP 状态码</h4><table>
+<thead>
+<tr>
+<th>状态码</th>
+<th>含义</th>
+<th>使用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>200</code></td>
+<td>OK</td>
+<td>请求成功</td>
+</tr>
+<tr>
+<td><code>201</code></td>
+<td>Created</td>
+<td>创建成功</td>
+</tr>
+<tr>
+<td><code>204</code></td>
+<td>No Content</td>
+<td>删除成功（无返回体）</td>
+</tr>
+<tr>
+<td><code>400</code></td>
+<td>Bad Request</td>
+<td>请求参数错误</td>
+</tr>
+<tr>
+<td><code>404</code></td>
+<td>Not Found</td>
+<td>资源不存在</td>
+</tr>
+<tr>
+<td><code>422</code></td>
+<td>Unprocessable Entity</td>
+<td>数据验证失败</td>
+</tr>
+<tr>
+<td><code>500</code></td>
+<td>Internal Server Error</td>
+<td>服务器内部错误</td>
+</tr>
+</tbody></table>
+<h4 id="RESTful-API-设计规范"><a href="#RESTful-API-设计规范" class="headerlink" title="RESTful API 设计规范"></a>RESTful API 设计规范</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">GET    /books/          # 获取书籍列表</span><br><span class="line">GET    /books/&#123;id&#125;      # 获取单本书籍</span><br><span class="line">POST   /books/          # 创建书籍</span><br><span class="line">PUT    /books/&#123;id&#125;      # 全量更新书籍</span><br><span class="line">PATCH  /books/&#123;id&#125;      # 部分更新书籍</span><br><span class="line">DELETE /books/&#123;id&#125;      # 删除书籍</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-6-需要安装的包"><a href="#1-6-需要安装的包" class="headerlink" title="1.6 需要安装的包"></a>1.6 需要安装的包</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建虚拟环境</span></span><br><span class="line">python -m venv venv</span><br><span class="line"><span class="built_in">source</span> venv/bin/activate  <span class="comment"># macOS/Linux</span></span><br><span class="line"><span class="comment"># venv\Scripts\activate   # Windows</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装依赖</span></span><br><span class="line">pip install fastapi uvicorn[standard] pydantic</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>包名</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>fastapi</code></td>
+<td>Web 框架本体</td>
+</tr>
+<tr>
+<td><code>uvicorn</code></td>
+<td>ASGI 服务器（运行 FastAPI）</td>
+</tr>
+<tr>
+<td><code>pydantic</code></td>
+<td>数据验证（FastAPI 内置依赖）</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="二、课程目录结构"><a href="#二、课程目录结构" class="headerlink" title="二、课程目录结构"></a>二、课程目录结构</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">01-fastapi基础路由与参数/</span><br><span class="line">└── README.md              # 本文件（含完整代码与依赖说明）</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="三、第一个-FastAPI-应用"><a href="#三、第一个-FastAPI-应用" class="headerlink" title="三、第一个 FastAPI 应用"></a>三、第一个 FastAPI 应用</h2><h3 id="3-1-Hello-World"><a href="#3-1-Hello-World" class="headerlink" title="3.1 Hello World"></a>3.1 Hello World</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># main.py</span></span><br><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI</span><br><span class="line"></span><br><span class="line">app = FastAPI()</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">root</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;Hello World&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-2-启动方式"><a href="#3-2-启动方式" class="headerlink" title="3.2 启动方式"></a>3.2 启动方式</h3><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uvicorn main:app --reload</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>main:app</code></td>
+<td><code>main.py</code> 文件中的 <code>app</code> 对象</td>
+</tr>
+<tr>
+<td><code>--reload</code></td>
+<td>代码修改后自动重启（开发环境用）</td>
+</tr>
+<tr>
+<td><code>--host 0.0.0.0</code></td>
+<td>允许外部访问</td>
+</tr>
+<tr>
+<td><code>--port 8000</code></td>
+<td>指定端口（默认 8000）</td>
+</tr>
+</tbody></table>
+<h3 id="3-3-自动生成的文档"><a href="#3-3-自动生成的文档" class="headerlink" title="3.3 自动生成的文档"></a>3.3 自动生成的文档</h3><p>启动后访问：</p>
+<ul>
+<li><strong>Swagger UI</strong>：<a target="_blank" rel="noopener" href="http://127.0.0.1:8000/docs">http://127.0.0.1:8000/docs</a></li>
+<li><strong>ReDoc</strong>：<a target="_blank" rel="noopener" href="http://127.0.0.1:8000/redoc">http://127.0.0.1:8000/redoc</a></li>
+<li><strong>OpenAPI JSON</strong>：<a target="_blank" rel="noopener" href="http://127.0.0.1:8000/openapi.json">http://127.0.0.1:8000/openapi.json</a></li>
+</ul>
+<hr>
+<h2 id="四、路由基础"><a href="#四、路由基础" class="headerlink" title="四、路由基础"></a>四、路由基础</h2><h3 id="4-1-装饰器路由"><a href="#4-1-装饰器路由" class="headerlink" title="4.1 装饰器路由"></a>4.1 装饰器路由</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI</span><br><span class="line"></span><br><span class="line">app = FastAPI()</span><br><span class="line"></span><br><span class="line"><span class="comment"># GET 请求</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">root</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;首页&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_books</span>():</span><br><span class="line">    <span class="keyword">return</span> [&#123;<span class="string">&quot;id&quot;</span>: <span class="number">1</span>, <span class="string">&quot;bookname&quot;</span>: <span class="string">&quot;Python编程&quot;</span>&#125;]</span><br><span class="line"></span><br><span class="line"><span class="comment"># POST 请求</span></span><br><span class="line"><span class="meta">@app.post(<span class="params"><span class="string">&quot;/books/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">create_book</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;创建成功&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># PUT 请求</span></span><br><span class="line"><span class="meta">@app.put(<span class="params"><span class="string">&quot;/books/&#123;id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">update_book</span>(<span class="params"><span class="built_in">id</span>: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">f&quot;更新书籍 <span class="subst">&#123;<span class="built_in">id</span>&#125;</span>&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># DELETE 请求</span></span><br><span class="line"><span class="meta">@app.delete(<span class="params"><span class="string">&quot;/books/&#123;id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">delete_book</span>(<span class="params"><span class="built_in">id</span>: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">f&quot;删除书籍 <span class="subst">&#123;<span class="built_in">id</span>&#125;</span>&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-2-路由执行流程"><a href="#4-2-路由执行流程" class="headerlink" title="4.2 路由执行流程"></a>4.2 路由执行流程</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br></pre></td><td class="code"><pre><span class="line">客户端请求: GET /books/</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">FastAPI 路由匹配</span><br><span class="line">    │  遍历所有 @app.get/post/put/delete</span><br><span class="line">    │  找到匹配的路径 + 方法</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">参数解析</span><br><span class="line">    │  路径参数 → 从 URL 提取</span><br><span class="line">    │  查询参数 → 从 ?key=value 提取</span><br><span class="line">    │  请求体 → 从 JSON body 提取</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">类型验证</span><br><span class="line">    │  Pydantic 自动验证参数类型</span><br><span class="line">    │  验证失败 → 返回 422</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">执行接口函数</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">返回响应（自动序列化为 JSON）</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="五、路径参数"><a href="#五、路径参数" class="headerlink" title="五、路径参数"></a>五、路径参数</h2><h3 id="5-1-基础路径参数"><a href="#5-1-基础路径参数" class="headerlink" title="5.1 基础路径参数"></a>5.1 基础路径参数</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 路径参数：在 URL 路径中定义</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&#123;book_id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_book</span>(<span class="params">book_id: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    访问: GET /books/1</span></span><br><span class="line"><span class="string">    book_id = 1</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;book_id&quot;</span>: book_id&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>工作原理：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">URL: /books/1</span><br><span class="line">         ↑</span><br><span class="line">    &#123;book_id&#125; = 1</span><br><span class="line">    类型注解 int → 自动转换 &quot;1&quot; → 1</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-2-多个路径参数"><a href="#5-2-多个路径参数" class="headerlink" title="5.2 多个路径参数"></a>5.2 多个路径参数</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&#123;book_id&#125;/chapters/&#123;chapter_id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_chapter</span>(<span class="params">book_id: <span class="built_in">int</span>, chapter_id: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    访问: GET /books/1/chapters/3</span></span><br><span class="line"><span class="string">    book_id = 1, chapter_id = 3</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;book_id&quot;</span>: book_id, <span class="string">&quot;chapter_id&quot;</span>: chapter_id&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-3-路径参数类型验证"><a href="#5-3-路径参数类型验证" class="headerlink" title="5.3 路径参数类型验证"></a>5.3 路径参数类型验证</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 自动类型转换和验证</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/items/&#123;item_id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_item</span>(<span class="params">item_id: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;item_id&quot;</span>: item_id&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># 访问 /items/abc → 422 错误（abc 不是 int）</span></span><br><span class="line"><span class="comment"># 访问 /items/123 → 200，item_id = 123</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="5-4-使用-Enum-限制路径参数"><a href="#5-4-使用-Enum-限制路径参数" class="headerlink" title="5.4 使用 Enum 限制路径参数"></a>5.4 使用 Enum 限制路径参数</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> enum <span class="keyword">import</span> Enum</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BookCategory</span>(<span class="built_in">str</span>, Enum):</span><br><span class="line">    PYTHON = <span class="string">&quot;python&quot;</span></span><br><span class="line">    JAVA = <span class="string">&quot;java&quot;</span></span><br><span class="line">    GO = <span class="string">&quot;go&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/category/&#123;category&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_books_by_category</span>(<span class="params">category: BookCategory</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    访问: GET /books/category/python → 成功</span></span><br><span class="line"><span class="string">    访问: GET /books/category/rust  → 422 错误（不在枚举中）</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;category&quot;</span>: category, <span class="string">&quot;value&quot;</span>: category.value&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="六、查询参数"><a href="#六、查询参数" class="headerlink" title="六、查询参数"></a>六、查询参数</h2><h3 id="6-1-基础查询参数"><a href="#6-1-基础查询参数" class="headerlink" title="6.1 基础查询参数"></a>6.1 基础查询参数</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 查询参数：不在路径中的函数参数</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">list_books</span>(<span class="params">skip: <span class="built_in">int</span> = <span class="number">0</span>, limit: <span class="built_in">int</span> = <span class="number">10</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    访问: GET /books/?skip=0&amp;limit=10</span></span><br><span class="line"><span class="string">    skip = 0, limit = 10</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;skip&quot;</span>: skip, <span class="string">&quot;limit&quot;</span>: limit&#125;</span><br></pre></td></tr></table></figure>
+
+<p><strong>工作原理：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">URL: /books/?skip=5&amp;limit=20</span><br><span class="line">              ↑           ↑</span><br><span class="line">         skip=5      limit=20</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-2-可选查询参数"><a href="#6-2-可选查询参数" class="headerlink" title="6.2 可选查询参数"></a>6.2 可选查询参数</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Optional</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">search_books</span>(<span class="params"></span></span><br><span class="line"><span class="params">    keyword: <span class="type">Optional</span>[<span class="built_in">str</span>] = <span class="literal">None</span>,    <span class="comment"># 可选参数</span></span></span><br><span class="line"><span class="params">    category: <span class="type">Optional</span>[<span class="built_in">str</span>] = <span class="literal">None</span>,   <span class="comment"># 可选参数</span></span></span><br><span class="line"><span class="params">    page: <span class="built_in">int</span> = <span class="number">1</span>,                     <span class="comment"># 有默认值 = 可选</span></span></span><br><span class="line"><span class="params"></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    访问: GET /books/                    → keyword=None, page=1</span></span><br><span class="line"><span class="string">    访问: GET /books/?keyword=Python     → keyword=&quot;Python&quot;, page=1</span></span><br><span class="line"><span class="string">    访问: GET /books/?keyword=Python&amp;page=2 → keyword=&quot;Python&quot;, page=2</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;keyword&quot;</span>: keyword, <span class="string">&quot;category&quot;</span>: category, <span class="string">&quot;page&quot;</span>: page&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-3-查询参数类型转换"><a href="#6-3-查询参数类型转换" class="headerlink" title="6.3 查询参数类型转换"></a>6.3 查询参数类型转换</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">list_books</span>(<span class="params"></span></span><br><span class="line"><span class="params">    price_min: <span class="built_in">float</span> = <span class="number">0</span>,       <span class="comment"># 自动转 float</span></span></span><br><span class="line"><span class="params">    is_active: <span class="built_in">bool</span> = <span class="literal">True</span>,     <span class="comment"># 自动转 bool</span></span></span><br><span class="line"><span class="params">    tags: <span class="built_in">list</span>[<span class="built_in">str</span>] = [],       <span class="comment"># 自动转列表</span></span></span><br><span class="line"><span class="params"></span>):</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;price_min&quot;</span>: price_min, <span class="string">&quot;is_active&quot;</span>: is_active, <span class="string">&quot;tags&quot;</span>: tags&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># GET /books/?price_min=50.5&amp;is_active=true&amp;tags=python&amp;tags=web</span></span><br><span class="line"><span class="comment"># price_min=50.5, is_active=True, tags=[&quot;python&quot;, &quot;web&quot;]</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="七、路径参数-vs-查询参数"><a href="#七、路径参数-vs-查询参数" class="headerlink" title="七、路径参数 vs 查询参数"></a>七、路径参数 vs 查询参数</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&#123;book_id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_book</span>(<span class="params"></span></span><br><span class="line"><span class="params">    book_id: <span class="built_in">int</span>,              <span class="comment"># ← 路径参数（在 URL 路径中）</span></span></span><br><span class="line"><span class="params">    include_chapters: <span class="built_in">bool</span> = <span class="literal">False</span>  <span class="comment"># ← 查询参数（不在路径中）</span></span></span><br><span class="line"><span class="params"></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    判断规则：</span></span><br><span class="line"><span class="string">    - 在路径 &#123;xxx&#125; 中定义的 → 路径参数</span></span><br><span class="line"><span class="string">    - 函数参数但不在路径中 → 查询参数</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;book_id&quot;</span>: book_id, <span class="string">&quot;include_chapters&quot;</span>: include_chapters&#125;</span><br><span class="line"></span><br><span class="line"><span class="comment"># GET /books/1?include_chapters=true</span></span><br><span class="line"><span class="comment"># book_id=1（路径参数）, include_chapters=True（查询参数）</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>对比表：</strong></p>
+<table>
+<thead>
+<tr>
+<th>对比项</th>
+<th>路径参数</th>
+<th>查询参数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>位置</td>
+<td>URL 路径中 <code>&#123;id&#125;</code></td>
+<td>URL 查询字符串 <code>?key=value</code></td>
+</tr>
+<tr>
+<td>是否必填</td>
+<td>必填</td>
+<td>有默认值则可选</td>
+</tr>
+<tr>
+<td>用途</td>
+<td>标识资源</td>
+<td>过滤、排序、分页</td>
+</tr>
+<tr>
+<td>示例</td>
+<td><code>/books/1</code></td>
+<td><code>/books/?page=2</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="八、完整可运行代码"><a href="#八、完整可运行代码" class="headerlink" title="八、完整可运行代码"></a>八、完整可运行代码</h2><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br></pre></td><td class="code"><pre><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">第 01 课：FastAPI 基础路由与参数</span></span><br><span class="line"><span class="string">完整可运行代码</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="keyword">from</span> enum <span class="keyword">import</span> Enum</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Optional</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI, Query, Path</span><br><span class="line"></span><br><span class="line">app = FastAPI(</span><br><span class="line">    title=<span class="string">&quot;第01课：FastAPI 基础路由与参数&quot;</span>,</span><br><span class="line">    description=<span class="string">&quot;学习路由、路径参数、查询参数&quot;</span>,</span><br><span class="line">    version=<span class="string">&quot;1.0.0&quot;</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># ---- 模拟数据 ----</span></span><br><span class="line">fake_books = [</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">1</span>, <span class="string">&quot;bookname&quot;</span>: <span class="string">&quot;Python编程&quot;</span>, <span class="string">&quot;author&quot;</span>: <span class="string">&quot;张三&quot;</span>, <span class="string">&quot;price&quot;</span>: <span class="number">89.9</span>, <span class="string">&quot;category&quot;</span>: <span class="string">&quot;python&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">2</span>, <span class="string">&quot;bookname&quot;</span>: <span class="string">&quot;Java编程&quot;</span>, <span class="string">&quot;author&quot;</span>: <span class="string">&quot;李四&quot;</span>, <span class="string">&quot;price&quot;</span>: <span class="number">79.9</span>, <span class="string">&quot;category&quot;</span>: <span class="string">&quot;java&quot;</span>&#125;,</span><br><span class="line">    &#123;<span class="string">&quot;id&quot;</span>: <span class="number">3</span>, <span class="string">&quot;bookname&quot;</span>: <span class="string">&quot;Go编程&quot;</span>, <span class="string">&quot;author&quot;</span>: <span class="string">&quot;王五&quot;</span>, <span class="string">&quot;price&quot;</span>: <span class="number">69.9</span>, <span class="string">&quot;category&quot;</span>: <span class="string">&quot;go&quot;</span>&#125;,</span><br><span class="line">]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="comment"># 1. 首页</span></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">root</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;message&quot;</span>: <span class="string">&quot;第01课：FastAPI 基础路由与参数，访问 /docs 查看文档&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="comment"># 2. 路径参数演示</span></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&#123;book_id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_book</span>(<span class="params">book_id: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;通过 ID 获取单本书籍&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">for</span> book <span class="keyword">in</span> fake_books:</span><br><span class="line">        <span class="keyword">if</span> book[<span class="string">&quot;id&quot;</span>] == book_id:</span><br><span class="line">            <span class="keyword">return</span> book</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;error&quot;</span>: <span class="string">&quot;书籍不存在&quot;</span>&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&#123;book_id&#125;/chapters/&#123;chapter_id&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_chapter</span>(<span class="params">book_id: <span class="built_in">int</span>, chapter_id: <span class="built_in">int</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;多路径参数演示&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;book_id&quot;</span>: book_id, <span class="string">&quot;chapter_id&quot;</span>: chapter_id&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="comment"># 3. 查询参数演示</span></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">list_books</span>(<span class="params"></span></span><br><span class="line"><span class="params">    skip: <span class="built_in">int</span> = <span class="number">0</span>,</span></span><br><span class="line"><span class="params">    limit: <span class="built_in">int</span> = <span class="number">10</span>,</span></span><br><span class="line"><span class="params">    keyword: <span class="type">Optional</span>[<span class="built_in">str</span>] = <span class="literal">None</span>,</span></span><br><span class="line"><span class="params"></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;查询参数：分页 + 搜索&quot;&quot;&quot;</span></span><br><span class="line">    books = fake_books</span><br><span class="line">    <span class="keyword">if</span> keyword:</span><br><span class="line">        books = [b <span class="keyword">for</span> b <span class="keyword">in</span> books <span class="keyword">if</span> keyword.lower() <span class="keyword">in</span> b[<span class="string">&quot;bookname&quot;</span>].lower()]</span><br><span class="line">    <span class="keyword">return</span> books[skip:skip + limit]</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="comment"># 4. Enum 路径参数</span></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">BookCategory</span>(<span class="built_in">str</span>, Enum):</span><br><span class="line">    PYTHON = <span class="string">&quot;python&quot;</span></span><br><span class="line">    JAVA = <span class="string">&quot;java&quot;</span></span><br><span class="line">    GO = <span class="string">&quot;go&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/books/category/&#123;category&#125;&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_by_category</span>(<span class="params">category: BookCategory</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;限制路径参数值&quot;&quot;&quot;</span></span><br><span class="line">    filtered = [b <span class="keyword">for</span> b <span class="keyword">in</span> fake_books <span class="keyword">if</span> b[<span class="string">&quot;category&quot;</span>] == category.value]</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;category&quot;</span>: category.value, <span class="string">&quot;count&quot;</span>: <span class="built_in">len</span>(filtered), <span class="string">&quot;books&quot;</span>: filtered&#125;</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="comment"># 5. 健康检查</span></span><br><span class="line"><span class="comment"># ==========================================</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/health&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">health</span>():</span><br><span class="line">    <span class="keyword">return</span> &#123;<span class="string">&quot;status&quot;</span>: <span class="string">&quot;ok&quot;</span>&#125;</span><br></pre></td></tr></table></figure>
+
+<p>保存为 <code>main.py</code> 后，运行：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">uvicorn main:app --reload</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="九、测试命令"><a href="#九、测试命令" class="headerlink" title="九、测试命令"></a>九、测试命令</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 首页</span></span><br><span class="line">curl http://127.0.0.1:8000/</span><br><span class="line"></span><br><span class="line"><span class="comment"># 路径参数</span></span><br><span class="line">curl http://127.0.0.1:8000/books/1</span><br><span class="line">curl http://127.0.0.1:8000/books/1/chapters/3</span><br><span class="line"></span><br><span class="line"><span class="comment"># 查询参数</span></span><br><span class="line">curl <span class="string">&quot;http://127.0.0.1:8000/books/?skip=0&amp;limit=2&quot;</span></span><br><span class="line">curl <span class="string">&quot;http://127.0.0.1:8000/books/?keyword=Python&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># Enum 路径参数</span></span><br><span class="line">curl http://127.0.0.1:8000/books/category/python</span><br><span class="line"></span><br><span class="line"><span class="comment"># 健康检查</span></span><br><span class="line">curl http://127.0.0.1:8000/health</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="十、关键要点总结"><a href="#十、关键要点总结" class="headerlink" title="十、关键要点总结"></a>十、关键要点总结</h2><table>
+<thead>
+<tr>
+<th>知识点</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>FastAPI()</code></td>
+<td>创建应用实例</td>
+</tr>
+<tr>
+<td><code>@app.get/post/put/delete</code></td>
+<td>路由装饰器</td>
+</tr>
+<tr>
+<td>路径参数</td>
+<td><code>&#123;param&#125;</code> 定义，函数参数同名接收</td>
+</tr>
+<tr>
+<td>查询参数</td>
+<td>函数参数但不在路径中</td>
+</tr>
+<tr>
+<td>类型注解</td>
+<td>自动验证和转换</td>
+</tr>
+<tr>
+<td><code>async def</code></td>
+<td>异步接口函数</td>
+</tr>
+<tr>
+<td><code>/docs</code></td>
+<td>自动生成的 Swagger 文档</td>
+</tr>
+<tr>
+<td>Enum</td>
+<td>限制路径参数的可选值</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="依赖安装"><a href="#依赖安装" class="headerlink" title="依赖安装"></a>依赖安装</h2><figure class="highlight txt"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">fastapi==0.115.0</span><br><span class="line">uvicorn[standard]==0.30.0</span><br><span class="line">pydantic==2.9.0</span><br></pre></td></tr></table></figure>
+
+<p>或使用 pip 一键安装：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">pip install fastapi==0.115.0 <span class="string">&quot;uvicorn[standard]==0.30.0&quot;</span> pydantic==2.9.0</span><br></pre></td></tr></table></figure>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://mschange.github.io">筎柒</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://mschange.github.io/posts/fastapi-lesson01-routing-params/">https://mschange.github.io/posts/fastapi-lesson01-routing-params/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://mschange.github.io" target="_blank">筎柒的个人笔记</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Python/">Python</a><a class="post-meta__tags" href="/tags/FastAPI/">FastAPI</a><a class="post-meta__tags" href="/tags/%E5%90%8E%E7%AB%AF/">后端</a><a class="post-meta__tags" href="/tags/Web%E5%BC%80%E5%8F%91/">Web开发</a><a class="post-meta__tags" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a></div><div class="post-share"><div class="social-share" data-image="/img/post-cover.jpg" data-sites="wechat,weibo,qq,facebook,x"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/posts/my-monorepos-guide/" title="My Monorepos — 从 0 到 1 完整实现指南"><img class="cover" src="/img/post-cover.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">My Monorepos — 从 0 到 1 完整实现指南</div></div><div class="info-2"><div class="info-item-1">My Monorepos — 从 0 到 1 完整实现指南 本文档从零开始，一步步搭建出一个基于 pnpm Monorepo + Vite + React 18 + TypeScript 的组件库项目，并最终发布到 npm。每一步都包含完整的命令和代码，跟着做就能跑起来。   目录 第一步：初始化 Monorepo 项目 第二步：创建 TypeScript 配置 第三步：创建 @mschange&#x2F;utils（工具函数包） 第四步：创建 @mschange&#x2F;design（Ant Design 封装包） 第五步：创建 @mschange&#x2F;base（业务组件包） ...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/posts/python-basics-part1/" title="Python 基础语法学习笔记（上篇：基础 ~ 函数 ~ 模块）"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-22</div><div class="info-item-2">Python 基础语法学习笔记（上篇：基础 ~ 函数 ~ 模块）</div></div><div class="info-2"><div class="info-item-1">Python 基础语法学习笔记（上篇：基础 ~ 函数 ~ 模块） 涵盖 Python 基础语法、数据类型、流程控制、数据容器、函数、模块六大板块。   目录 第一章：初识 Python（01-05） 1.1 Hello World 与 print 输出 1.2 字面量 1.3 变量 1.4 标识符与字符串格式化 1.5 键盘输入 input()   第二章：流程控制 2.1 条件语句 if &#x2F; elif &#x2F; else 2.2 模式匹配 match &#x2F; case（Python 3.10+） 2.3 for 循环 2.4 while 循环 2.5 for 与 w...</div></div></div></a><a class="pagination-related" href="/posts/python-oop-part2/" title="Python 面向对象与高级特性学习笔记（下篇：OOP ~ 文件 ~ 异常 ~ 综合项目）"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-22</div><div class="info-item-2">Python 面向对象与高级特性学习笔记（下篇：OOP ~ 文件 ~ 异常 ~ 综合项目）</div></div><div class="info-2"><div class="info-item-1">Python 面向对象与高级特性学习笔记（下篇：OOP ~ 文件 ~ 异常 ~ 综合项目） 涵盖面向对象编程（封装、继承、多态）、异常处理、文件操作、JSON 序列化、综合项目实战。   目录 第六章：面向对象编程基础（33-34） 6.1 类的定义与实例化 6.2 构造方法 init 与 self 6.3 实例方法 6.4 魔法方法   第七章：异常处理（35） 7.1 try &#x2F; except &#x2F; finally 7.2 常见异常类型   第八章：文件操作（35-36） 8.1 文本文件读写 8.2 JSON 序列化与反序列化 8.3 CSV 文件读写 8.4 二...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E7%AC%AC-01-%E8%AF%BE%EF%BC%9AFastAPI-%E5%9F%BA%E7%A1%80%E8%B7%AF%E7%94%B1%E4%B8%8E%E5%8F%82%E6%95%B0"><span class="toc-number">1.</span> <span class="toc-text">第 01 课：FastAPI 基础路由与参数</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BB%8E-0-%E5%88%B0-1-%E5%AE%8C%E6%95%B4%E5%AE%9E%E7%8E%B0%E6%8C%87%E5%8D%97"><span class="toc-number">1.1.</span> <span class="toc-text">从 0 到 1 完整实现指南</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95"><span class="toc-number">1.2.</span> <span class="toc-text">目录</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81FastAPI-%E5%89%8D%E7%BD%AE%E7%9F%A5%E8%AF%86"><span class="toc-number">1.3.</span> <span class="toc-text">一、FastAPI 前置知识</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-Python-%E5%9F%BA%E7%A1%80%E8%A6%81%E6%B1%82"><span class="toc-number">1.3.1.</span> <span class="toc-text">1.1 Python 基础要求</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-%E7%B1%BB%E5%9E%8B%E6%B3%A8%E8%A7%A3%E9%80%9F%E6%9F%A5"><span class="toc-number">1.3.2.</span> <span class="toc-text">1.2 类型注解速查</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-3-%E8%A3%85%E9%A5%B0%E5%99%A8%E5%8E%9F%E7%90%86"><span class="toc-number">1.3.3.</span> <span class="toc-text">1.3 装饰器原理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-4-%E5%BC%82%E6%AD%A5%E7%BC%96%E7%A8%8B%E5%9F%BA%E7%A1%80"><span class="toc-number">1.3.4.</span> <span class="toc-text">1.4 异步编程基础</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-5-Web-%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5"><span class="toc-number">1.3.5.</span> <span class="toc-text">1.5 Web 基础概念</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#HTTP-%E6%96%B9%E6%B3%95"><span class="toc-number">1.3.5.1.</span> <span class="toc-text">HTTP 方法</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#HTTP-%E7%8A%B6%E6%80%81%E7%A0%81"><span class="toc-number">1.3.5.2.</span> <span class="toc-text">HTTP 状态码</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#RESTful-API-%E8%AE%BE%E8%AE%A1%E8%A7%84%E8%8C%83"><span class="toc-number">1.3.5.3.</span> <span class="toc-text">RESTful API 设计规范</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-6-%E9%9C%80%E8%A6%81%E5%AE%89%E8%A3%85%E7%9A%84%E5%8C%85"><span class="toc-number">1.3.6.</span> <span class="toc-text">1.6 需要安装的包</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E8%AF%BE%E7%A8%8B%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="toc-number">1.4.</span> <span class="toc-text">二、课程目录结构</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E7%AC%AC%E4%B8%80%E4%B8%AA-FastAPI-%E5%BA%94%E7%94%A8"><span class="toc-number">1.5.</span> <span class="toc-text">三、第一个 FastAPI 应用</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-Hello-World"><span class="toc-number">1.5.1.</span> <span class="toc-text">3.1 Hello World</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E5%90%AF%E5%8A%A8%E6%96%B9%E5%BC%8F"><span class="toc-number">1.5.2.</span> <span class="toc-text">3.2 启动方式</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-%E8%87%AA%E5%8A%A8%E7%94%9F%E6%88%90%E7%9A%84%E6%96%87%E6%A1%A3"><span class="toc-number">1.5.3.</span> <span class="toc-text">3.3 自动生成的文档</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E8%B7%AF%E7%94%B1%E5%9F%BA%E7%A1%80"><span class="toc-number">1.6.</span> <span class="toc-text">四、路由基础</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E8%A3%85%E9%A5%B0%E5%99%A8%E8%B7%AF%E7%94%B1"><span class="toc-number">1.6.1.</span> <span class="toc-text">4.1 装饰器路由</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E8%B7%AF%E7%94%B1%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B"><span class="toc-number">1.6.2.</span> <span class="toc-text">4.2 路由执行流程</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E8%B7%AF%E5%BE%84%E5%8F%82%E6%95%B0"><span class="toc-number">1.7.</span> <span class="toc-text">五、路径参数</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E5%9F%BA%E7%A1%80%E8%B7%AF%E5%BE%84%E5%8F%82%E6%95%B0"><span class="toc-number">1.7.1.</span> <span class="toc-text">5.1 基础路径参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E5%A4%9A%E4%B8%AA%E8%B7%AF%E5%BE%84%E5%8F%82%E6%95%B0"><span class="toc-number">1.7.2.</span> <span class="toc-text">5.2 多个路径参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-%E8%B7%AF%E5%BE%84%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E9%AA%8C%E8%AF%81"><span class="toc-number">1.7.3.</span> <span class="toc-text">5.3 路径参数类型验证</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-%E4%BD%BF%E7%94%A8-Enum-%E9%99%90%E5%88%B6%E8%B7%AF%E5%BE%84%E5%8F%82%E6%95%B0"><span class="toc-number">1.7.4.</span> <span class="toc-text">5.4 使用 Enum 限制路径参数</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E6%9F%A5%E8%AF%A2%E5%8F%82%E6%95%B0"><span class="toc-number">1.8.</span> <span class="toc-text">六、查询参数</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E5%9F%BA%E7%A1%80%E6%9F%A5%E8%AF%A2%E5%8F%82%E6%95%B0"><span class="toc-number">1.8.1.</span> <span class="toc-text">6.1 基础查询参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E5%8F%AF%E9%80%89%E6%9F%A5%E8%AF%A2%E5%8F%82%E6%95%B0"><span class="toc-number">1.8.2.</span> <span class="toc-text">6.2 可选查询参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E6%9F%A5%E8%AF%A2%E5%8F%82%E6%95%B0%E7%B1%BB%E5%9E%8B%E8%BD%AC%E6%8D%A2"><span class="toc-number">1.8.3.</span> <span class="toc-text">6.3 查询参数类型转换</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E8%B7%AF%E5%BE%84%E5%8F%82%E6%95%B0-vs-%E6%9F%A5%E8%AF%A2%E5%8F%82%E6%95%B0"><span class="toc-number">1.9.</span> <span class="toc-text">七、路径参数 vs 查询参数</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E5%AE%8C%E6%95%B4%E5%8F%AF%E8%BF%90%E8%A1%8C%E4%BB%A3%E7%A0%81"><span class="toc-number">1.10.</span> <span class="toc-text">八、完整可运行代码</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E6%B5%8B%E8%AF%95%E5%91%BD%E4%BB%A4"><span class="toc-number">1.11.</span> <span class="toc-text">九、测试命令</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E5%85%B3%E9%94%AE%E8%A6%81%E7%82%B9%E6%80%BB%E7%BB%93"><span class="toc-number">1.12.</span> <span class="toc-text">十、关键要点总结</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BE%9D%E8%B5%96%E5%AE%89%E8%A3%85"><span class="toc-number">1.13.</span> <span class="toc-text">依赖安装</span></a></li></ol></li></ol></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2024 - 2026 By 筎柒</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.7.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.7.0"></script><script src="/js/main.js?v=5.7.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@6.1.14/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"></div><script src="/js/custom.js"></script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.min.js" defer="defer"></script><script>document.addEventListener('DOMContentLoaded', () => {
+  const pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+  window.pjax = new Pjax({
+    elements: 'a:not([target="_blank"]):not([data-fancybox])',
+    selectors: pjaxSelectors,
+    cacheBust: false,
+    analytics: false,
+    scrollRestoration: false
+  })
+
+  const triggerPjaxFn = (val) => {
+    if (!val) return
+    Object.values(val).forEach(fn => {
+      try {
+        fn()
+      } catch (err) {
+        console.debug('Pjax callback failed:', err)
+      }
+    })
+  }
+
+  document.addEventListener('pjax:send', () => {
+    // removeEventListener
+    btf.removeGlobalFnEvent('pjaxSendOnce')
+    btf.removeGlobalFnEvent('themeChange')
+
+    // reset readmode
+    const $bodyClassList = document.body.classList
+    if ($bodyClassList.contains('read-mode')) $bodyClassList.remove('read-mode')
+
+    triggerPjaxFn(window.globalFn.pjaxSend)
+  })
+
+  document.addEventListener('pjax:complete', () => {
+    btf.removeGlobalFnEvent('pjaxCompleteOnce')
+    document.querySelectorAll('script[data-pjax]').forEach(item => {
+      if (!item.parentNode) return
+      const newScript = document.createElement('script')
+      const content = item.text || item.textContent || ''
+      Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+      newScript.appendChild(document.createTextNode(content))
+      item.parentNode.replaceChild(newScript, item)
+    })
+
+    triggerPjaxFn(window.globalFn.pjaxComplete)
+  })
+
+  document.addEventListener('pjax:error', e => {
+    const responseURL = e.request && e.request.responseURL
+    if (e.request && e.request.status === 404) {
+      true
+        ? pjax.loadUrl('/404.html')
+        : responseURL && (window.location.href = responseURL)
+    } else if (responseURL) {
+      window.location.href = responseURL
+    }
+  })
+})</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=5.7.0"></script></div></div></body></html>
