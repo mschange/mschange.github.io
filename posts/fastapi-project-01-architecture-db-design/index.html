@@ -1,0 +1,610 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>项目实战 01：FastAPI 项目架构与数据库设计 | 筎柒的个人笔记</title><meta name="author" content="筎柒"><meta name="copyright" content="筎柒"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="FastAPI 新闻应用实战第一课：分层架构设计、目录结构、数据库表设计与数据流向，为后续模块开发打好基础。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="项目实战 01：FastAPI 项目架构与数据库设计">
+<meta property="og:url" content="https://mschange.github.io/posts/fastapi-project-01-architecture-db-design/index.html">
+<meta property="og:site_name" content="筎柒的个人笔记">
+<meta property="og:description" content="FastAPI 新闻应用实战第一课：分层架构设计、目录结构、数据库表设计与数据流向，为后续模块开发打好基础。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://mschange.github.io/img/post-cover.jpg">
+<meta property="article:published_time" content="2026-08-31T13:32:00.000Z">
+<meta property="article:modified_time" content="2026-08-31T13:32:00.000Z">
+<meta property="article:author" content="筎柒">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="FastAPI">
+<meta property="article:tag" content="Pydantic">
+<meta property="article:tag" content="后端">
+<meta property="article:tag" content="Web开发">
+<meta property="article:tag" content="学习笔记">
+<meta property="article:tag" content="SQLAlchemy">
+<meta property="article:tag" content="MySQL">
+<meta property="article:tag" content="项目实战">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://mschange.github.io/img/post-cover.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "项目实战 01：FastAPI 项目架构与数据库设计",
+  "url": "https://mschange.github.io/posts/fastapi-project-01-architecture-db-design/",
+  "image": "https://mschange.github.io/img/post-cover.jpg",
+  "datePublished": "2026-08-31T13:32:00.000Z",
+  "dateModified": "2026-08-31T13:32:00.000Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "筎柒",
+      "url": "https://mschange.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.ico"><link rel="canonical" href="https://mschange.github.io/posts/fastapi-project-01-architecture-db-design/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.7.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@6.1.14/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        const data = { value }
+
+        if (ttl != null) {
+          data.expiry = Date.now() + ttl * 86400000
+        }
+
+        localStorage.setItem(key, JSON.stringify(data))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return
+
+        try {
+          const data = JSON.parse(itemStr)
+
+          if (data.expiry && Date.now() > data.expiry) {
+            localStorage.removeItem(key)
+            return
+          }
+
+          return data.value
+        } catch {
+          localStorage.removeItem(key)
+        }
+      }
+    }
+
+    const scriptCache = new Map()
+    const cssCache = new Map()
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => {
+        if (scriptCache.has(url)) {
+          return scriptCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+
+          script.src = url
+          script.async = true
+
+          for (const key in attr) {
+            script.setAttribute(key, attr[key])
+          }
+
+          script.onload = resolve
+          script.onerror = reject
+
+          document.head.appendChild(script)
+        })
+
+        scriptCache.set(url, promise)
+
+        return promise
+      },
+      getCSS: (url, id) => {
+        if (cssCache.has(url)) {
+          return cssCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const link = document.createElement('link')
+
+          link.rel = 'stylesheet'
+          link.href = url
+
+          if (id) {
+            link.id = id
+          }
+
+          link.onload = resolve
+          link.onerror = reject
+
+          document.head.appendChild(link)
+        })
+
+        cssCache.set(url, promise)
+
+        return promise
+      },
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!true && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+      const activateDarkMode = () => {
+        document.documentElement.dataset.theme = 'dark'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.dataset.theme = 'light'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: '项目实战 01：FastAPI 项目架构与数据库设计',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (true) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div class="bg-animation" id="web_bg" style="background-image: url(/img/background.jpg);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/avatar.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">20</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">19</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="not-top-img fixed" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">筎柒的个人笔记</span></a><a class="nav-page-title" href="/"><span class="site-name">项目实战 01：FastAPI 项目架构与数据库设计</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav></header><main class="layout" id="content-inner"><div id="post"><div id="post-info"><h1 class="post-title">项目实战 01：FastAPI 项目架构与数据库设计</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">发表于</span><time datetime="2026-08-31T13:32:00.000Z" title="发表于 2026-08-31 21:32:00">2026-08-31</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Python/">Python</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">2.6k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>10分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div><article class="container post-content" id="article-container"><h1 id="项目实战-01：FastAPI-项目架构与数据库设计"><a href="#项目实战-01：FastAPI-项目架构与数据库设计" class="headerlink" title="项目实战 01：FastAPI 项目架构与数据库设计"></a>项目实战 01：FastAPI 项目架构与数据库设计</h1><blockquote>
+<p>新闻应用后端从 0 到 1 —— 先理清架构与数据库，再动手写代码。</p>
+</blockquote>
+<hr>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li>一、FastAPI 核心知识点</li>
+<li>二、项目概述</li>
+<li>三、项目目录结构</li>
+<li>四、数据库设计</li>
+<li>五、数据流向示例</li>
+<li>六、本项目要实现的功能清单</li>
+<li>七、下一步</li>
+</ul>
+<hr>
+<h2 id="一、FastAPI-核心知识点"><a href="#一、FastAPI-核心知识点" class="headerlink" title="一、FastAPI 核心知识点"></a>一、FastAPI 核心知识点</h2><h3 id="1-1-什么是-FastAPI"><a href="#1-1-什么是-FastAPI" class="headerlink" title="1.1 什么是 FastAPI"></a>1.1 什么是 FastAPI</h3><p>FastAPI 是一个基于 Python 的现代 Web 框架，用于构建 API 接口。</p>
+<p><strong>核心特性：</strong></p>
+<ul>
+<li>基于标准 Python 类型提示，自动生成 API 文档</li>
+<li>异步支持（async&#x2F;await）</li>
+<li>自动数据校验（基于 Pydantic）</li>
+<li>高性能（与 NodeJS、Go 相当）</li>
+</ul>
+<h3 id="1-2-必须掌握的知识点"><a href="#1-2-必须掌握的知识点" class="headerlink" title="1.2 必须掌握的知识点"></a>1.2 必须掌握的知识点</h3><table>
+<thead>
+<tr>
+<th>知识点</th>
+<th>说明</th>
+<th>本项目使用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>路由（Router）</strong></td>
+<td>定义 API 接口路径和方法</td>
+<td>用户注册、新闻列表等所有接口</td>
+</tr>
+<tr>
+<td><strong>路径参数（Path）</strong></td>
+<td>URL 中的参数，如 <code>/user/123</code></td>
+<td>删除浏览记录 <code>/delete/&#123;history_id&#125;</code></td>
+</tr>
+<tr>
+<td><strong>查询参数（Query）</strong></td>
+<td>URL 问号后的参数，如 <code>?page=1</code></td>
+<td>分页、筛选</td>
+</tr>
+<tr>
+<td><strong>请求体（Body）</strong></td>
+<td>POST&#x2F;PUT 请求的 JSON 数据</td>
+<td>注册、登录、修改信息</td>
+</tr>
+<tr>
+<td><strong>依赖注入（Depends）</strong></td>
+<td>复用代码、共享连接</td>
+<td>数据库连接、Token 认证</td>
+</tr>
+<tr>
+<td><strong>中间件（Middleware）</strong></td>
+<td>请求&#x2F;响应的预处理</td>
+<td>CORS 跨域处理</td>
+</tr>
+<tr>
+<td><strong>异常处理（Exception）</strong></td>
+<td>统一错误返回格式</td>
+<td>全局异常处理器</td>
+</tr>
+<tr>
+<td><strong>Pydantic 模型</strong></td>
+<td>数据校验和序列化</td>
+<td>请求参数校验、响应格式定义</td>
+</tr>
+<tr>
+<td><strong>异步编程（async&#x2F;await）</strong></td>
+<td>非阻塞 IO</td>
+<td>所有数据库操作</td>
+</tr>
+</tbody></table>
+<h3 id="1-3-SQLAlchemy-ORM-知识点"><a href="#1-3-SQLAlchemy-ORM-知识点" class="headerlink" title="1.3 SQLAlchemy ORM 知识点"></a>1.3 SQLAlchemy ORM 知识点</h3><table>
+<thead>
+<tr>
+<th>知识点</th>
+<th>说明</th>
+<th>本项目使用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>DeclarativeBase</strong></td>
+<td>ORM 基类</td>
+<td>所有模型继承</td>
+</tr>
+<tr>
+<td><strong>Mapped 类型</strong></td>
+<td>类型安全的列定义</td>
+<td><code>Mapped[int]</code>、<code>Mapped[str]</code></td>
+</tr>
+<tr>
+<td><strong>mapped_column</strong></td>
+<td>列配置</td>
+<td>主键、外键、索引</td>
+</tr>
+<tr>
+<td><strong>关系（Relationship）</strong></td>
+<td>表关联</td>
+<td>用户-收藏、新闻-收藏</td>
+</tr>
+<tr>
+<td><strong>查询（select&#x2F;insert&#x2F;update&#x2F;delete）</strong></td>
+<td>CRUD 操作</td>
+<td>所有数据库操作</td>
+</tr>
+<tr>
+<td><strong>异步会话（AsyncSession）</strong></td>
+<td>异步数据库连接</td>
+<td><code>get_db</code> 依赖</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="二、项目概述"><a href="#二、项目概述" class="headerlink" title="二、项目概述"></a>二、项目概述</h2><h3 id="2-1-项目做什么"><a href="#2-1-项目做什么" class="headerlink" title="2.1 项目做什么"></a>2.1 项目做什么</h3><p>这是一个<strong>新闻应用后端</strong>，提供以下功能：</p>
+<ol>
+<li><strong>用户系统</strong>：注册、登录、获取信息、修改信息、修改密码</li>
+<li><strong>新闻浏览</strong>：查看分类、新闻列表、新闻详情、相关推荐</li>
+<li><strong>收藏功能</strong>：收藏新闻、取消收藏、查看收藏列表</li>
+<li><strong>浏览历史</strong>：记录浏览、查看历史、删除记录</li>
+</ol>
+<h3 id="2-2-技术栈"><a href="#2-2-技术栈" class="headerlink" title="2.2 技术栈"></a>2.2 技术栈</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">后端框架：FastAPI</span><br><span class="line">数据库：MySQL 8.0</span><br><span class="line">ORM：SQLAlchemy 2.0（异步）</span><br><span class="line">数据库驱动：aiomysql</span><br><span class="line">密码加密：passlib + bcrypt</span><br><span class="line">数据校验：Pydantic</span><br><span class="line">服务器：Uvicorn</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="三、项目目录结构"><a href="#三、项目目录结构" class="headerlink" title="三、项目目录结构"></a>三、项目目录结构</h2><h3 id="3-1-完整目录"><a href="#3-1-完整目录" class="headerlink" title="3.1 完整目录"></a>3.1 完整目录</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br></pre></td><td class="code"><pre><span class="line">pythonProject1/</span><br><span class="line">├── main.py                    # 应用入口：创建FastAPI实例，注册路由和中间件</span><br><span class="line">├── .env                       # 环境变量：数据库连接信息</span><br><span class="line">├── sql.txt                    # 数据库SQL：建表语句和初始数据</span><br><span class="line">│</span><br><span class="line">├── config/                    # 配置层</span><br><span class="line">│   └── db_conf.py             # 数据库连接配置（异步引擎、会话工厂）</span><br><span class="line">│</span><br><span class="line">├── routers/                   # 路由层（接口定义）</span><br><span class="line">│   ├── users.py               # 用户模块接口</span><br><span class="line">│   ├── news.py                # 新闻模块接口</span><br><span class="line">│   ├── favorites.py           # 收藏模块接口</span><br><span class="line">│   └── history.py             # 浏览历史接口</span><br><span class="line">│</span><br><span class="line">├── crud/                      # 数据操作层（数据库CRUD）</span><br><span class="line">│   ├── users.py               # 用户数据操作</span><br><span class="line">│   ├── news.py                # 新闻数据操作</span><br><span class="line">│   ├── favorites.py           # 收藏数据操作</span><br><span class="line">│   └── history.py             # 浏览历史数据操作</span><br><span class="line">│</span><br><span class="line">├── models/                    # ORM模型层（数据库表结构映射）</span><br><span class="line">│   ├── users.py               # User表、Token表</span><br><span class="line">│   ├── news.py                # Category表、News表</span><br><span class="line">│   ├── favorites.py           # Favorite表</span><br><span class="line">│   └── history.py             # History表</span><br><span class="line">│</span><br><span class="line">├── schemas/                   # 数据校验层（请求/响应格式定义）</span><br><span class="line">│   ├── base.py                # 基础Schema（新闻通用字段）</span><br><span class="line">│   ├── users.py               # 用户相关Schema</span><br><span class="line">│   ├── favorites.py           # 收藏相关Schema</span><br><span class="line">│   └── history.py             # 浏览历史Schema</span><br><span class="line">│</span><br><span class="line">└── utils/                     # 工具层（通用功能封装）</span><br><span class="line">    ├── Security.py            # 密码加密/验证</span><br><span class="line">    ├── auth.py                # Token认证（依赖注入）</span><br><span class="line">    ├── Response.py            # 统一响应格式</span><br><span class="line">    ├── exception.py           # 异常处理器定义</span><br><span class="line">    └── Exception_handlers.py  # 异常处理器注册</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-2-为什么要这样划分"><a href="#3-2-为什么要这样划分" class="headerlink" title="3.2 为什么要这样划分"></a>3.2 为什么要这样划分</h3><h4 id="分层架构的核心思想"><a href="#分层架构的核心思想" class="headerlink" title="分层架构的核心思想"></a>分层架构的核心思想</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">客户端请求 → Router（接口定义）→ CRUD（数据操作）→ Database（数据库）</span><br><span class="line">                ↓</span><br><span class="line">           Schema（数据校验）</span><br></pre></td></tr></table></figure>
+
+<h4 id="各层职责"><a href="#各层职责" class="headerlink" title="各层职责"></a>各层职责</h4><table>
+<thead>
+<tr>
+<th>层级</th>
+<th>职责</th>
+<th>为什么单独一层</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>routers&#x2F;</strong></td>
+<td>定义 API 接口，接收请求，返回响应</td>
+<td>接口逻辑和数据库操作分离，代码更清晰</td>
+</tr>
+<tr>
+<td><strong>crud&#x2F;</strong></td>
+<td>封装数据库操作（增删改查）</td>
+<td>复用数据库操作，Router 层不需要写 SQL</td>
+</tr>
+<tr>
+<td><strong>models&#x2F;</strong></td>
+<td>定义数据库表结构（ORM 映射）</td>
+<td>表结构集中管理，修改方便</td>
+</tr>
+<tr>
+<td><strong>schemas&#x2F;</strong></td>
+<td>定义请求&#x2F;响应数据格式</td>
+<td>自动校验数据，防止非法数据进入系统</td>
+</tr>
+<tr>
+<td><strong>utils&#x2F;</strong></td>
+<td>通用工具（加密、认证、响应）</td>
+<td>复用代码，避免重复实现</td>
+</tr>
+<tr>
+<td><strong>config&#x2F;</strong></td>
+<td>配置文件</td>
+<td>配置集中管理，环境切换方便</td>
+</tr>
+</tbody></table>
+<h4 id="举例说明"><a href="#举例说明" class="headerlink" title="举例说明"></a>举例说明</h4><p>假设要修改「获取用户信息」接口：</p>
+<p><strong>不分层的问题：</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 所有代码写在一个文件</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/user/info&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_user_info</span>(<span class="params">token: <span class="built_in">str</span></span>):</span><br><span class="line">    <span class="comment"># 1. 验证Token</span></span><br><span class="line">    <span class="comment"># 2. 连接数据库</span></span><br><span class="line">    <span class="comment"># 3. 查询用户</span></span><br><span class="line">    <span class="comment"># 4. 组装响应</span></span><br><span class="line">    <span class="comment"># 5. 关闭连接</span></span><br><span class="line">    <span class="comment"># ... 100行代码混在一起</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>分层后的好处：</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># routers/users.py - 只关心接口逻辑</span></span><br><span class="line"><span class="meta">@app.get(<span class="params"><span class="string">&quot;/info&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_user_info</span>(<span class="params">user: User = Depends(<span class="params">authenticate_current_user</span>)</span>):</span><br><span class="line">    <span class="keyword">return</span> success_response(data=UserInfoResponse.model_validate(user))</span><br><span class="line"></span><br><span class="line"><span class="comment"># crud/users.py - 只关心数据库操作</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">get_user_by_id</span>(<span class="params">db: AsyncSession, user_id: <span class="built_in">int</span></span>):</span><br><span class="line">    stmt = select(User).where(User.<span class="built_in">id</span> == user_id)</span><br><span class="line">    result = <span class="keyword">await</span> db.execute(stmt)</span><br><span class="line">    <span class="keyword">return</span> result.scalar_one_or_none()</span><br><span class="line"></span><br><span class="line"><span class="comment"># utils/auth.py - 只关心认证逻辑</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">authenticate_current_user</span>(<span class="params">...</span>):</span><br><span class="line">    <span class="comment"># Token验证逻辑</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>好处：</strong></p>
+<ol>
+<li><strong>代码复用</strong>：<code>get_user_by_id</code> 可以被多个接口调用</li>
+<li><strong>易于测试</strong>：每层可以单独测试</li>
+<li><strong>职责清晰</strong>：修改数据库操作不影响接口定义</li>
+<li><strong>团队协作</strong>：不同人负责不同层</li>
+</ol>
+<hr>
+<h2 id="四、数据库设计"><a href="#四、数据库设计" class="headerlink" title="四、数据库设计"></a>四、数据库设计</h2><h3 id="4-1-表结构总览"><a href="#4-1-表结构总览" class="headerlink" title="4.1 表结构总览"></a>4.1 表结构总览</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────┐         ┌─────────────┐</span><br><span class="line">│    user     │         │news_category│</span><br><span class="line">├─────────────┤         ├─────────────┤</span><br><span class="line">│ id (PK)     │         │ id (PK)     │</span><br><span class="line">│ username    │         │ name        │</span><br><span class="line">│ password    │         │ sort_order  │</span><br><span class="line">│ nickname    │         └──────┬──────┘</span><br><span class="line">│ avatar      │                │</span><br><span class="line">│ gender      │                │ 1:N</span><br><span class="line">│ bio         │                │</span><br><span class="line">│ phone       │         ┌──────┴──────┐</span><br><span class="line">└──────┬──────┘         │    news     │</span><br><span class="line">       │                ├─────────────┤</span><br><span class="line">       │ 1:N            │ id (PK)     │</span><br><span class="line">       │                │ title       │</span><br><span class="line">       ├────────────────┤ description │</span><br><span class="line">       │                │ content     │</span><br><span class="line">       │                │ image       │</span><br><span class="line">       │                │ author      │</span><br><span class="line">       │                │ category_id │──┐</span><br><span class="line">       │                │ views       │  │</span><br><span class="line">       │                └──────┬──────┘  │</span><br><span class="line">       │                       │         │</span><br><span class="line">       │ 1:N                   │ N:1     │</span><br><span class="line">       │                       │         │</span><br><span class="line">┌──────┴──────┐         ┌──────┴──────┐</span><br><span class="line">│ user_token  │         │  favorite   │</span><br><span class="line">├─────────────┤         ├─────────────┤</span><br><span class="line">│ id (PK)     │         │ id (PK)     │</span><br><span class="line">│ user_id ────┤         │ user_id ────┤</span><br><span class="line">│ token       │         │ news_id ────┤</span><br><span class="line">│ expires_at  │         │ created_at  │</span><br><span class="line">└─────────────┘         └─────────────┘</span><br><span class="line">                                │</span><br><span class="line">                                │ N:1</span><br><span class="line">                                │</span><br><span class="line">                         ┌──────┴──────┐</span><br><span class="line">                         │   history   │</span><br><span class="line">                         ├─────────────┤</span><br><span class="line">                         │ id (PK)     │</span><br><span class="line">                         │ user_id ────┤</span><br><span class="line">                         │ news_id ────┤</span><br><span class="line">                         │ view_time   │</span><br><span class="line">                         └─────────────┘</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-2-表关系详解"><a href="#4-2-表关系详解" class="headerlink" title="4.2 表关系详解"></a>4.2 表关系详解</h3><h4 id="1-user（用户表）"><a href="#1-user（用户表）" class="headerlink" title="1. user（用户表）"></a>1. user（用户表）</h4><p>存储用户基本信息。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> <span class="keyword">user</span> (</span><br><span class="line">    id <span class="type">INT</span> <span class="keyword">PRIMARY KEY</span> AUTO_INCREMENT,</span><br><span class="line">    username <span class="type">VARCHAR</span>(<span class="number">50</span>) <span class="keyword">UNIQUE</span> <span class="keyword">NOT NULL</span>,    <span class="comment">-- 用户名（唯一）</span></span><br><span class="line">    password <span class="type">VARCHAR</span>(<span class="number">255</span>) <span class="keyword">NOT NULL</span>,          <span class="comment">-- 密码（加密存储）</span></span><br><span class="line">    nickname <span class="type">VARCHAR</span>(<span class="number">50</span>),                    <span class="comment">-- 昵称</span></span><br><span class="line">    avatar <span class="type">VARCHAR</span>(<span class="number">255</span>),                     <span class="comment">-- 头像URL</span></span><br><span class="line">    gender ENUM(<span class="string">&#x27;male&#x27;</span>,<span class="string">&#x27;female&#x27;</span>,<span class="string">&#x27;unknown&#x27;</span>),  <span class="comment">-- 性别</span></span><br><span class="line">    bio <span class="type">VARCHAR</span>(<span class="number">500</span>),                        <span class="comment">-- 个人简介</span></span><br><span class="line">    phone <span class="type">VARCHAR</span>(<span class="number">20</span>) <span class="keyword">UNIQUE</span>,                <span class="comment">-- 手机号（唯一）</span></span><br><span class="line">    created_at <span class="type">TIMESTAMP</span>,                    <span class="comment">-- 创建时间</span></span><br><span class="line">    updated_at <span class="type">TIMESTAMP</span>                     <span class="comment">-- 更新时间</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h4 id="2-user-token（Token-表）"><a href="#2-user-token（Token-表）" class="headerlink" title="2. user_token（Token 表）"></a>2. user_token（Token 表）</h4><p>存储用户登录令牌，用于身份认证。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> user_token (</span><br><span class="line">    id <span class="type">INT</span> <span class="keyword">PRIMARY KEY</span> AUTO_INCREMENT,</span><br><span class="line">    user_id <span class="type">INT</span> <span class="keyword">NOT NULL</span>,           <span class="comment">-- 关联用户ID</span></span><br><span class="line">    token <span class="type">VARCHAR</span>(<span class="number">255</span>) <span class="keyword">NOT NULL</span>,    <span class="comment">-- 令牌值（UUID）</span></span><br><span class="line">    expires_at <span class="type">TIMESTAMP</span> <span class="keyword">NOT NULL</span>,  <span class="comment">-- 过期时间</span></span><br><span class="line">    created_at <span class="type">TIMESTAMP</span>,</span><br><span class="line">    <span class="keyword">FOREIGN KEY</span> (user_id) <span class="keyword">REFERENCES</span> <span class="keyword">user</span>(id) <span class="keyword">ON</span> <span class="keyword">DELETE</span> CASCADE</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p><strong>关系说明：</strong></p>
+<ul>
+<li><code>user_id</code> 关联 <code>user.id</code></li>
+<li>一个用户可以有多个 Token 记录（但代码中只保留最新的一个）</li>
+<li><code>ON DELETE CASCADE</code>：用户删除时，Token 自动删除</li>
+</ul>
+<h4 id="3-news-category（新闻分类表）"><a href="#3-news-category（新闻分类表）" class="headerlink" title="3. news_category（新闻分类表）"></a>3. news_category（新闻分类表）</h4><p>存储新闻分类信息。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> news_category (</span><br><span class="line">    id <span class="type">INT</span> <span class="keyword">PRIMARY KEY</span> AUTO_INCREMENT,</span><br><span class="line">    name <span class="type">VARCHAR</span>(<span class="number">50</span>) <span class="keyword">UNIQUE</span> <span class="keyword">NOT NULL</span>,  <span class="comment">-- 分类名称（唯一）</span></span><br><span class="line">    sort_order <span class="type">INT</span> <span class="keyword">DEFAULT</span> <span class="number">0</span>,          <span class="comment">-- 排序权重</span></span><br><span class="line">    created_at <span class="type">TIMESTAMP</span>,</span><br><span class="line">    updated_at <span class="type">TIMESTAMP</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<h4 id="4-news（新闻表）"><a href="#4-news（新闻表）" class="headerlink" title="4. news（新闻表）"></a>4. news（新闻表）</h4><p>存储新闻内容。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> news (</span><br><span class="line">    id <span class="type">INT</span> <span class="keyword">PRIMARY KEY</span> AUTO_INCREMENT,</span><br><span class="line">    title <span class="type">VARCHAR</span>(<span class="number">255</span>) <span class="keyword">NOT NULL</span>,       <span class="comment">-- 标题</span></span><br><span class="line">    description <span class="type">VARCHAR</span>(<span class="number">500</span>),          <span class="comment">-- 简介</span></span><br><span class="line">    content TEXT <span class="keyword">NOT NULL</span>,             <span class="comment">-- 内容</span></span><br><span class="line">    image <span class="type">VARCHAR</span>(<span class="number">255</span>),                <span class="comment">-- 封面图</span></span><br><span class="line">    author <span class="type">VARCHAR</span>(<span class="number">50</span>),                <span class="comment">-- 作者</span></span><br><span class="line">    category_id <span class="type">INT</span> <span class="keyword">NOT NULL</span>,          <span class="comment">-- 分类ID</span></span><br><span class="line">    views <span class="type">INT</span> <span class="keyword">DEFAULT</span> <span class="number">0</span>,               <span class="comment">-- 浏览量</span></span><br><span class="line">    publish_time <span class="type">TIMESTAMP</span>,            <span class="comment">-- 发布时间</span></span><br><span class="line">    created_at <span class="type">TIMESTAMP</span>,</span><br><span class="line">    updated_at <span class="type">TIMESTAMP</span>,</span><br><span class="line">    <span class="keyword">FOREIGN KEY</span> (category_id) <span class="keyword">REFERENCES</span> news_category(id)</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p><strong>关系说明：</strong></p>
+<ul>
+<li><code>category_id</code> 关联 <code>news_category.id</code></li>
+<li>一个分类可以有多条新闻（1:N）</li>
+</ul>
+<h4 id="5-favorite（收藏表）"><a href="#5-favorite（收藏表）" class="headerlink" title="5. favorite（收藏表）"></a>5. favorite（收藏表）</h4><p>存储用户收藏的新闻。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> favorite (</span><br><span class="line">    id <span class="type">INT</span> <span class="keyword">PRIMARY KEY</span> AUTO_INCREMENT,</span><br><span class="line">    user_id <span class="type">INT</span> <span class="keyword">NOT NULL</span>,      <span class="comment">-- 用户ID</span></span><br><span class="line">    news_id <span class="type">INT</span> <span class="keyword">NOT NULL</span>,      <span class="comment">-- 新闻ID</span></span><br><span class="line">    created_at <span class="type">TIMESTAMP</span>,      <span class="comment">-- 收藏时间</span></span><br><span class="line">    <span class="keyword">UNIQUE</span> KEY (user_id, news_id),  <span class="comment">-- 联合唯一：同一用户不能重复收藏</span></span><br><span class="line">    <span class="keyword">FOREIGN KEY</span> (user_id) <span class="keyword">REFERENCES</span> <span class="keyword">user</span>(id) <span class="keyword">ON</span> <span class="keyword">DELETE</span> CASCADE,</span><br><span class="line">    <span class="keyword">FOREIGN KEY</span> (news_id) <span class="keyword">REFERENCES</span> news(id) <span class="keyword">ON</span> <span class="keyword">DELETE</span> CASCADE</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p><strong>关系说明：</strong></p>
+<ul>
+<li><code>user_id</code> 关联 <code>user.id</code></li>
+<li><code>news_id</code> 关联 <code>news.id</code></li>
+<li><code>UNIQUE KEY (user_id, news_id)</code>：防止重复收藏</li>
+<li>这是 <code>user</code> 和 <code>news</code> 的<strong>多对多关系</strong>的中间表</li>
+</ul>
+<h4 id="6-history（浏览历史表）"><a href="#6-history（浏览历史表）" class="headerlink" title="6. history（浏览历史表）"></a>6. history（浏览历史表）</h4><p>存储用户浏览过的新闻。</p>
+<figure class="highlight sql"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">CREATE TABLE</span> history (</span><br><span class="line">    id <span class="type">INT</span> <span class="keyword">PRIMARY KEY</span> AUTO_INCREMENT,</span><br><span class="line">    user_id <span class="type">INT</span> <span class="keyword">NOT NULL</span>,      <span class="comment">-- 用户ID</span></span><br><span class="line">    news_id <span class="type">INT</span> <span class="keyword">NOT NULL</span>,      <span class="comment">-- 新闻ID</span></span><br><span class="line">    view_time <span class="type">TIMESTAMP</span>,       <span class="comment">-- 浏览时间</span></span><br><span class="line">    <span class="keyword">FOREIGN KEY</span> (user_id) <span class="keyword">REFERENCES</span> <span class="keyword">user</span>(id) <span class="keyword">ON</span> <span class="keyword">DELETE</span> CASCADE,</span><br><span class="line">    <span class="keyword">FOREIGN KEY</span> (news_id) <span class="keyword">REFERENCES</span> news(id) <span class="keyword">ON</span> <span class="keyword">DELETE</span> CASCADE</span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p><strong>关系说明：</strong></p>
+<ul>
+<li>同样是 <code>user</code> 和 <code>news</code> 的多对多关系</li>
+<li>与 <code>favorite</code> 不同：同一用户可以多次浏览同一新闻（更新 <code>view_time</code>）</li>
+</ul>
+<h3 id="4-3-表关系总结"><a href="#4-3-表关系总结" class="headerlink" title="4.3 表关系总结"></a>4.3 表关系总结</h3><table>
+<thead>
+<tr>
+<th>关系</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>user → user_token</td>
+<td>1:N</td>
+<td>一个用户多个 Token</td>
+</tr>
+<tr>
+<td>news_category → news</td>
+<td>1:N</td>
+<td>一个分类多条新闻</td>
+</tr>
+<tr>
+<td>user → favorite</td>
+<td>1:N</td>
+<td>一个用户多个收藏</td>
+</tr>
+<tr>
+<td>news → favorite</td>
+<td>1:N</td>
+<td>一条新闻多个用户收藏</td>
+</tr>
+<tr>
+<td>user → history</td>
+<td>1:N</td>
+<td>一个用户多条浏览记录</td>
+</tr>
+<tr>
+<td>news → history</td>
+<td>1:N</td>
+<td>一条新闻多条浏览记录</td>
+</tr>
+</tbody></table>
+<p><strong>多对多关系：</strong></p>
+<ul>
+<li>user ↔ news（通过 favorite 表）</li>
+<li>user ↔ news（通过 history 表）</li>
+</ul>
+<hr>
+<h2 id="五、数据流向示例"><a href="#五、数据流向示例" class="headerlink" title="五、数据流向示例"></a>五、数据流向示例</h2><h3 id="5-1-用户注册流程"><a href="#5-1-用户注册流程" class="headerlink" title="5.1 用户注册流程"></a>5.1 用户注册流程</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">1. 客户端发送请求</span><br><span class="line">   POST /api/user/register</span><br><span class="line">   Body: &#123;&quot;username&quot;: &quot;test&quot;, &quot;password&quot;: &quot;123456&quot;&#125;</span><br><span class="line"></span><br><span class="line">2. Router层（routers/users.py）</span><br><span class="line">   - 接收请求参数</span><br><span class="line">   - 调用 CRUD 层检查用户名是否存在</span><br><span class="line">   - 调用 CRUD 层创建用户</span><br><span class="line">   - 调用 CRUD 层创建Token</span><br><span class="line">   - 返回响应</span><br><span class="line"></span><br><span class="line">3. CRUD层（crud/users.py）</span><br><span class="line">   - get_user_by_username()：查询用户名</span><br><span class="line">   - create_user()：创建用户（密码加密）</span><br><span class="line">   - create_token()：生成Token</span><br><span class="line"></span><br><span class="line">4. Model层（models/users.py）</span><br><span class="line">   - User：用户表ORM</span><br><span class="line">   - Token：Token表ORM</span><br><span class="line"></span><br><span class="line">5. Database层（config/db_conf.py）</span><br><span class="line">   - get_db()：提供数据库连接</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-2-获取新闻详情流程"><a href="#5-2-获取新闻详情流程" class="headerlink" title="5.2 获取新闻详情流程"></a>5.2 获取新闻详情流程</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><span class="line">1. 客户端发送请求</span><br><span class="line">   GET /api/news/detail?id=1</span><br><span class="line"></span><br><span class="line">2. Router层</span><br><span class="line">   - 接收 news_id 参数</span><br><span class="line">   - 调用 CRUD 层查询新闻</span><br><span class="line">   - 调用 CRUD 层更新浏览量</span><br><span class="line">   - 调用 CRUD 层获取相关推荐</span><br><span class="line">   - 返回响应</span><br><span class="line"></span><br><span class="line">3. CRUD层</span><br><span class="line">   - get_news_detail()：查询新闻详情</span><br><span class="line">   - update_news_views()：浏览量+1</span><br><span class="line">   - get_related_news()：查询同分类热门新闻</span><br><span class="line"></span><br><span class="line">4. 返回数据</span><br><span class="line">   &#123;</span><br><span class="line">     &quot;code&quot;: 200,</span><br><span class="line">     &quot;message&quot;: &quot;success&quot;,</span><br><span class="line">     &quot;data&quot;: &#123;</span><br><span class="line">       &quot;id&quot;: 1,</span><br><span class="line">       &quot;title&quot;: &quot;新闻标题&quot;,</span><br><span class="line">       &quot;content&quot;: &quot;新闻内容&quot;,</span><br><span class="line">       &quot;relatedNews&quot;: [...]</span><br><span class="line">     &#125;</span><br><span class="line">   &#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="六、本项目要实现的功能清单"><a href="#六、本项目要实现的功能清单" class="headerlink" title="六、本项目要实现的功能清单"></a>六、本项目要实现的功能清单</h2><h3 id="6-1-用户模块"><a href="#6-1-用户模块" class="headerlink" title="6.1 用户模块"></a>6.1 用户模块</h3><ul>
+<li><input disabled="" type="checkbox"> 用户注册（密码加密、生成 Token）</li>
+<li><input disabled="" type="checkbox"> 用户登录（验证密码、生成 Token）</li>
+<li><input disabled="" type="checkbox"> 获取用户信息（Token 认证）</li>
+<li><input disabled="" type="checkbox"> 更新用户信息（昵称、头像、性别等）</li>
+<li><input disabled="" type="checkbox"> 修改密码（验证旧密码）</li>
+</ul>
+<h3 id="6-2-新闻模块"><a href="#6-2-新闻模块" class="headerlink" title="6.2 新闻模块"></a>6.2 新闻模块</h3><ul>
+<li><input disabled="" type="checkbox"> 获取新闻分类列表</li>
+<li><input disabled="" type="checkbox"> 获取新闻列表（分页、按分类筛选）</li>
+<li><input disabled="" type="checkbox"> 获取新闻详情（浏览量 +1、相关推荐）</li>
+</ul>
+<h3 id="6-3-收藏模块"><a href="#6-3-收藏模块" class="headerlink" title="6.3 收藏模块"></a>6.3 收藏模块</h3><ul>
+<li><input disabled="" type="checkbox"> 检查是否已收藏</li>
+<li><input disabled="" type="checkbox"> 添加收藏</li>
+<li><input disabled="" type="checkbox"> 取消收藏</li>
+<li><input disabled="" type="checkbox"> 获取收藏列表（分页、包含新闻详情）</li>
+<li><input disabled="" type="checkbox"> 清空所有收藏</li>
+</ul>
+<h3 id="6-4-浏览历史模块"><a href="#6-4-浏览历史模块" class="headerlink" title="6.4 浏览历史模块"></a>6.4 浏览历史模块</h3><ul>
+<li><input disabled="" type="checkbox"> 添加浏览记录（重复浏览更新时间）</li>
+<li><input disabled="" type="checkbox"> 获取浏览历史列表（分页、包含新闻详情）</li>
+<li><input disabled="" type="checkbox"> 删除单条浏览记录</li>
+<li><input disabled="" type="checkbox"> 清空所有浏览记录</li>
+</ul>
+<hr>
+<h2 id="七、下一步"><a href="#七、下一步" class="headerlink" title="七、下一步"></a>七、下一步</h2><p>02 文档将实现：</p>
+<ul>
+<li>统一响应格式封装</li>
+<li>全局异常处理器</li>
+<li>数据库连接配置</li>
+</ul>
+<p>这些是所有模块共用的基础设施。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://mschange.github.io">筎柒</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://mschange.github.io/posts/fastapi-project-01-architecture-db-design/">https://mschange.github.io/posts/fastapi-project-01-architecture-db-design/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://mschange.github.io" target="_blank">筎柒的个人笔记</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Python/">Python</a><a class="post-meta__tags" href="/tags/FastAPI/">FastAPI</a><a class="post-meta__tags" href="/tags/Pydantic/">Pydantic</a><a class="post-meta__tags" href="/tags/%E5%90%8E%E7%AB%AF/">后端</a><a class="post-meta__tags" href="/tags/Web%E5%BC%80%E5%8F%91/">Web开发</a><a class="post-meta__tags" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a><a class="post-meta__tags" href="/tags/SQLAlchemy/">SQLAlchemy</a><a class="post-meta__tags" href="/tags/MySQL/">MySQL</a><a class="post-meta__tags" href="/tags/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/">项目实战</a></div><div class="post-share"><div class="social-share" data-image="/img/post-cover.jpg" data-sites="wechat,weibo,qq,facebook,x"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/posts/fastapi-lesson16-delete-data/" title="第 16 课：删除数据"><img class="cover" src="/img/post-cover.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">第 16 课：删除数据</div></div><div class="info-2"><div class="info-item-1">第 16 课：删除数据 从 0 到 1 完整实现指南 —— 掌握硬删除、软删除、批量删除与恢复记录。   目录 一、前置知识 二、课程目录结构 三、硬删除（db.delete） 四、软删除（is_deleted 标记） 五、批量删除 六、恢复软删除记录 七、查询时处理软删除状态 八、完整可运行代码 九、测试命令 十、关键要点总结 完整课程总结 数据库初始化 SQL 完整代码 依赖安装   一、前置知识1.1 删除数据的两种方式在数据库操作中，”删除”有两种截然不同的策略：    方式 说明 可恢复 适用场景    硬删除 直接从数据库中物理删除记录 不可恢复 临时数据、缓存数据   软删...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/posts/fastapi-lesson16-delete-data/" title="第 16 课：删除数据"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-30</div><div class="info-item-2">第 16 课：删除数据</div></div><div class="info-2"><div class="info-item-1">第 16 课：删除数据 从 0 到 1 完整实现指南 —— 掌握硬删除、软删除、批量删除与恢复记录。   目录 一、前置知识 二、课程目录结构 三、硬删除（db.delete） 四、软删除（is_deleted 标记） 五、批量删除 六、恢复软删除记录 七、查询时处理软删除状态 八、完整可运行代码 九、测试命令 十、关键要点总结 完整课程总结 数据库初始化 SQL 完整代码 依赖安装   一、前置知识1.1 删除数据的两种方式在数据库操作中，”删除”有两种截然不同的策略：    方式 说明 可恢复 适用场景    硬删除 直接从数据库中物理删除记录 不可恢复 临时数据、缓存数据   软删...</div></div></div></a><a class="pagination-related" href="/posts/fastapi-lesson14-model-relationships/" title="第 14 课：模型关系与关联操作"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-29</div><div class="info-item-2">第 14 课：模型关系与关联操作</div></div><div class="info-2"><div class="info-item-1">第 14 课：模型关系与关联操作 从 0 到 1 完整实现指南 —— 掌握一对多、多对多、级联操作与关联查询。   目录 一、前置知识 二、课程目录结构 三、一对多关系详解 四、多对多关系详解 五、级联操作（cascade） 六、创建关联记录 七、加载策略（lazy） 八、完整可运行代码 九、测试命令 十、关键要点总结 数据库初始化 SQL 完整代码 依赖安装   一、前置知识1.1 为什么需要模型关系？在真实应用中，数据之间往往存在关联关系。例如：  一个出版社出版多本书（一对多） 一本书有多个章节（一对多） 一本书有多个标签，一个标签关联多本书（多对多）  如果不用关系，所有数据都堆...</div></div></div></a><a class="pagination-related" href="/posts/fastapi-lesson12-validation-exception/" title="第 12 课：数据验证与异常处理"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-28</div><div class="info-item-2">第 12 课：数据验证与异常处理</div></div><div class="info-2"><div class="info-item-1">第 12 课：数据验证与异常处理 从 0 到 1 完整实现指南 —— 掌握 Pydantic 验证、IntegrityError、HTTPException 与全局异常处理。   目录 一、前置知识 二、课程目录结构 三、Pydantic Field 基础验证 四、@field_validator 字段级验证 五、@model_validator 模型级验证 六、HTTPException 手动抛出 七、IntegrityError 处理 八、自定义异常类 九、全局异常处理器 十、完整异常处理体系 十一、测试命令 十二、常见错误与调试 十三、关键要点总结 十四、最佳实践 十五、课后练习 ...</div></div></div></a><a class="pagination-related" href="/posts/fastapi-lesson11-update-data/" title="第 11 课：更新数据"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-28</div><div class="info-item-2">第 11 课：更新数据</div></div><div class="info-2"><div class="info-item-1">第 11 课：更新数据 从 0 到 1 完整实现指南 —— 掌握 PUT 全量更新、PATCH 部分更新、业务验证与批量更新。   目录 一、前置知识 二、课程目录结构 三、ORM 模型 四、Pydantic 模型设计 五、PUT 全量更新 六、PATCH 部分更新 七、带业务验证的更新 八、批量更新 九、批量状态更新 十、测试命令 十一、常见错误与调试 十二、关键要点总结 十三、课后练习 十四、与下节课的衔接 数据库初始化 SQL 完整代码 依赖安装   一、前置知识1.1 需要掌握的基础概念   知识点 重要程度 说明    第09课查询基础 必须 select()、session....</div></div></div></a><a class="pagination-related" href="/posts/fastapi-lesson08-insert-operations/" title="第 08 课：新增数据（INSERT 操作全解）"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-27</div><div class="info-item-2">第 08 课：新增数据（INSERT 操作全解）</div></div><div class="info-2"><div class="info-item-1">第 08 课：新增数据（INSERT 操作全解） 全面掌握 SQLAlchemy 中所有新增数据的方式：单条创建（add+commit+refresh）、批量创建（循环 add）、批量创建（add_all）、bulk_insert_mappings、get-or-create 模式、带默认值的新增。   目录 前置知识 课程目录结构 核心概念总览 Step 1：单条创建 —— add + commit + refresh Step 2：批量创建 —— 循环 add Step 3：批量创建 —— add_all（推荐） Step 4：bulk_insert_mappings —— 字典方式...</div></div></div></a><a class="pagination-related" href="/posts/fastapi-lesson09-query-data-basics/" title="第 09 课：查询数据基础"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-27</div><div class="info-item-2">第 09 课：查询数据基础</div></div><div class="info-2"><div class="info-item-1">第 09 课：查询数据基础 从 0 到 1 完整实现指南 —— 掌握 SQLAlchemy select() 查询、条件过滤、结果提取与 FastAPI 路由集成。   目录 一、前置知识 二、课程目录结构 三、数据库配置与会话管理 四、查询数据流概览 五、查询操作详解 六、完整可运行代码 七、测试命令 八、常见错误与调试 九、关键要点总结 十、课后练习 十一、与下节课的衔接 数据库初始化 SQL 完整代码 依赖安装   一、前置知识1.1 需要掌握的基础概念   知识点 重要程度 说明    SQLAlchemy ORM 模型 必须 了解 DeclarativeBase、Mapped、...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98-01%EF%BC%9AFastAPI-%E9%A1%B9%E7%9B%AE%E6%9E%B6%E6%9E%84%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%BA%93%E8%AE%BE%E8%AE%A1"><span class="toc-number">1.</span> <span class="toc-text">项目实战 01：FastAPI 项目架构与数据库设计</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95"><span class="toc-number">1.1.</span> <span class="toc-text">目录</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81FastAPI-%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86%E7%82%B9"><span class="toc-number">1.2.</span> <span class="toc-text">一、FastAPI 核心知识点</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E4%BB%80%E4%B9%88%E6%98%AF-FastAPI"><span class="toc-number">1.2.1.</span> <span class="toc-text">1.1 什么是 FastAPI</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-%E5%BF%85%E9%A1%BB%E6%8E%8C%E6%8F%A1%E7%9A%84%E7%9F%A5%E8%AF%86%E7%82%B9"><span class="toc-number">1.2.2.</span> <span class="toc-text">1.2 必须掌握的知识点</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-3-SQLAlchemy-ORM-%E7%9F%A5%E8%AF%86%E7%82%B9"><span class="toc-number">1.2.3.</span> <span class="toc-text">1.3 SQLAlchemy ORM 知识点</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E9%A1%B9%E7%9B%AE%E6%A6%82%E8%BF%B0"><span class="toc-number">1.3.</span> <span class="toc-text">二、项目概述</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E9%A1%B9%E7%9B%AE%E5%81%9A%E4%BB%80%E4%B9%88"><span class="toc-number">1.3.1.</span> <span class="toc-text">2.1 项目做什么</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-%E6%8A%80%E6%9C%AF%E6%A0%88"><span class="toc-number">1.3.2.</span> <span class="toc-text">2.2 技术栈</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E9%A1%B9%E7%9B%AE%E7%9B%AE%E5%BD%95%E7%BB%93%E6%9E%84"><span class="toc-number">1.4.</span> <span class="toc-text">三、项目目录结构</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-%E5%AE%8C%E6%95%B4%E7%9B%AE%E5%BD%95"><span class="toc-number">1.4.1.</span> <span class="toc-text">3.1 完整目录</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E4%B8%BA%E4%BB%80%E4%B9%88%E8%A6%81%E8%BF%99%E6%A0%B7%E5%88%92%E5%88%86"><span class="toc-number">1.4.2.</span> <span class="toc-text">3.2 为什么要这样划分</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%88%86%E5%B1%82%E6%9E%B6%E6%9E%84%E7%9A%84%E6%A0%B8%E5%BF%83%E6%80%9D%E6%83%B3"><span class="toc-number">1.4.2.1.</span> <span class="toc-text">分层架构的核心思想</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%90%84%E5%B1%82%E8%81%8C%E8%B4%A3"><span class="toc-number">1.4.2.2.</span> <span class="toc-text">各层职责</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BE%E4%BE%8B%E8%AF%B4%E6%98%8E"><span class="toc-number">1.4.2.3.</span> <span class="toc-text">举例说明</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E6%95%B0%E6%8D%AE%E5%BA%93%E8%AE%BE%E8%AE%A1"><span class="toc-number">1.5.</span> <span class="toc-text">四、数据库设计</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E8%A1%A8%E7%BB%93%E6%9E%84%E6%80%BB%E8%A7%88"><span class="toc-number">1.5.1.</span> <span class="toc-text">4.1 表结构总览</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E8%A1%A8%E5%85%B3%E7%B3%BB%E8%AF%A6%E8%A7%A3"><span class="toc-number">1.5.2.</span> <span class="toc-text">4.2 表关系详解</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#1-user%EF%BC%88%E7%94%A8%E6%88%B7%E8%A1%A8%EF%BC%89"><span class="toc-number">1.5.2.1.</span> <span class="toc-text">1. user（用户表）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#2-user-token%EF%BC%88Token-%E8%A1%A8%EF%BC%89"><span class="toc-number">1.5.2.2.</span> <span class="toc-text">2. user_token（Token 表）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#3-news-category%EF%BC%88%E6%96%B0%E9%97%BB%E5%88%86%E7%B1%BB%E8%A1%A8%EF%BC%89"><span class="toc-number">1.5.2.3.</span> <span class="toc-text">3. news_category（新闻分类表）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#4-news%EF%BC%88%E6%96%B0%E9%97%BB%E8%A1%A8%EF%BC%89"><span class="toc-number">1.5.2.4.</span> <span class="toc-text">4. news（新闻表）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#5-favorite%EF%BC%88%E6%94%B6%E8%97%8F%E8%A1%A8%EF%BC%89"><span class="toc-number">1.5.2.5.</span> <span class="toc-text">5. favorite（收藏表）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#6-history%EF%BC%88%E6%B5%8F%E8%A7%88%E5%8E%86%E5%8F%B2%E8%A1%A8%EF%BC%89"><span class="toc-number">1.5.2.6.</span> <span class="toc-text">6. history（浏览历史表）</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E8%A1%A8%E5%85%B3%E7%B3%BB%E6%80%BB%E7%BB%93"><span class="toc-number">1.5.3.</span> <span class="toc-text">4.3 表关系总结</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%95%B0%E6%8D%AE%E6%B5%81%E5%90%91%E7%A4%BA%E4%BE%8B"><span class="toc-number">1.6.</span> <span class="toc-text">五、数据流向示例</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E7%94%A8%E6%88%B7%E6%B3%A8%E5%86%8C%E6%B5%81%E7%A8%8B"><span class="toc-number">1.6.1.</span> <span class="toc-text">5.1 用户注册流程</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E8%8E%B7%E5%8F%96%E6%96%B0%E9%97%BB%E8%AF%A6%E6%83%85%E6%B5%81%E7%A8%8B"><span class="toc-number">1.6.2.</span> <span class="toc-text">5.2 获取新闻详情流程</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E6%9C%AC%E9%A1%B9%E7%9B%AE%E8%A6%81%E5%AE%9E%E7%8E%B0%E7%9A%84%E5%8A%9F%E8%83%BD%E6%B8%85%E5%8D%95"><span class="toc-number">1.7.</span> <span class="toc-text">六、本项目要实现的功能清单</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E7%94%A8%E6%88%B7%E6%A8%A1%E5%9D%97"><span class="toc-number">1.7.1.</span> <span class="toc-text">6.1 用户模块</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E6%96%B0%E9%97%BB%E6%A8%A1%E5%9D%97"><span class="toc-number">1.7.2.</span> <span class="toc-text">6.2 新闻模块</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E6%94%B6%E8%97%8F%E6%A8%A1%E5%9D%97"><span class="toc-number">1.7.3.</span> <span class="toc-text">6.3 收藏模块</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-4-%E6%B5%8F%E8%A7%88%E5%8E%86%E5%8F%B2%E6%A8%A1%E5%9D%97"><span class="toc-number">1.7.4.</span> <span class="toc-text">6.4 浏览历史模块</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E4%B8%8B%E4%B8%80%E6%AD%A5"><span class="toc-number">1.8.</span> <span class="toc-text">七、下一步</span></a></li></ol></li></ol></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2024 - 2026 By 筎柒</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.7.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.7.0"></script><script src="/js/main.js?v=5.7.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@6.1.14/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"></div><script src="/js/custom.js"></script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.min.js" defer="defer"></script><script>document.addEventListener('DOMContentLoaded', () => {
+  const pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+  window.pjax = new Pjax({
+    elements: 'a:not([target="_blank"]):not([data-fancybox])',
+    selectors: pjaxSelectors,
+    cacheBust: false,
+    analytics: false,
+    scrollRestoration: false
+  })
+
+  const triggerPjaxFn = (val) => {
+    if (!val) return
+    Object.values(val).forEach(fn => {
+      try {
+        fn()
+      } catch (err) {
+        console.debug('Pjax callback failed:', err)
+      }
+    })
+  }
+
+  document.addEventListener('pjax:send', () => {
+    // removeEventListener
+    btf.removeGlobalFnEvent('pjaxSendOnce')
+    btf.removeGlobalFnEvent('themeChange')
+
+    // reset readmode
+    const $bodyClassList = document.body.classList
+    if ($bodyClassList.contains('read-mode')) $bodyClassList.remove('read-mode')
+
+    triggerPjaxFn(window.globalFn.pjaxSend)
+  })
+
+  document.addEventListener('pjax:complete', () => {
+    btf.removeGlobalFnEvent('pjaxCompleteOnce')
+    document.querySelectorAll('script[data-pjax]').forEach(item => {
+      if (!item.parentNode) return
+      const newScript = document.createElement('script')
+      const content = item.text || item.textContent || ''
+      Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+      newScript.appendChild(document.createTextNode(content))
+      item.parentNode.replaceChild(newScript, item)
+    })
+
+    triggerPjaxFn(window.globalFn.pjaxComplete)
+  })
+
+  document.addEventListener('pjax:error', e => {
+    const responseURL = e.request && e.request.responseURL
+    if (e.request && e.request.status === 404) {
+      true
+        ? pjax.loadUrl('/404.html')
+        : responseURL && (window.location.href = responseURL)
+    } else if (responseURL) {
+      window.location.href = responseURL
+    }
+  })
+})</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=5.7.0"></script></div></div></body></html>
