@@ -1,0 +1,609 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>LangChain 01：调用 DeepSeek 模型 — 从零开始 | 筎柒的个人笔记</title><meta name="author" content="筎柒"><meta name="copyright" content="筎柒"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="从零搭建项目，使用 langchain-deepseek 调用 DeepSeek 大模型，掌握显式传 Key 与自动读取环境变量两种方式。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain 01：调用 DeepSeek 模型 — 从零开始">
+<meta property="og:url" content="https://mschange.github.io/posts/langchain-lesson01-deepseek-from-scratch/index.html">
+<meta property="og:site_name" content="筎柒的个人笔记">
+<meta property="og:description" content="从零搭建项目，使用 langchain-deepseek 调用 DeepSeek 大模型，掌握显式传 Key 与自动读取环境变量两种方式。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://mschange.github.io/img/post-cover.jpg">
+<meta property="article:published_time" content="2026-09-02T13:35:00.000Z">
+<meta property="article:modified_time" content="2026-09-02T13:35:00.000Z">
+<meta property="article:author" content="筎柒">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="学习笔记">
+<meta property="article:tag" content="LangChain">
+<meta property="article:tag" content="DeepSeek">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="大模型">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://mschange.github.io/img/post-cover.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "LangChain 01：调用 DeepSeek 模型 — 从零开始",
+  "url": "https://mschange.github.io/posts/langchain-lesson01-deepseek-from-scratch/",
+  "image": "https://mschange.github.io/img/post-cover.jpg",
+  "datePublished": "2026-09-02T13:35:00.000Z",
+  "dateModified": "2026-09-02T13:35:00.000Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "筎柒",
+      "url": "https://mschange.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.ico"><link rel="canonical" href="https://mschange.github.io/posts/langchain-lesson01-deepseek-from-scratch/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.7.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@6.1.14/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        const data = { value }
+
+        if (ttl != null) {
+          data.expiry = Date.now() + ttl * 86400000
+        }
+
+        localStorage.setItem(key, JSON.stringify(data))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return
+
+        try {
+          const data = JSON.parse(itemStr)
+
+          if (data.expiry && Date.now() > data.expiry) {
+            localStorage.removeItem(key)
+            return
+          }
+
+          return data.value
+        } catch {
+          localStorage.removeItem(key)
+        }
+      }
+    }
+
+    const scriptCache = new Map()
+    const cssCache = new Map()
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => {
+        if (scriptCache.has(url)) {
+          return scriptCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+
+          script.src = url
+          script.async = true
+
+          for (const key in attr) {
+            script.setAttribute(key, attr[key])
+          }
+
+          script.onload = resolve
+          script.onerror = reject
+
+          document.head.appendChild(script)
+        })
+
+        scriptCache.set(url, promise)
+
+        return promise
+      },
+      getCSS: (url, id) => {
+        if (cssCache.has(url)) {
+          return cssCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const link = document.createElement('link')
+
+          link.rel = 'stylesheet'
+          link.href = url
+
+          if (id) {
+            link.id = id
+          }
+
+          link.onload = resolve
+          link.onerror = reject
+
+          document.head.appendChild(link)
+        })
+
+        cssCache.set(url, promise)
+
+        return promise
+      },
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!true && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+      const activateDarkMode = () => {
+        document.documentElement.dataset.theme = 'dark'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.dataset.theme = 'light'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'LangChain 01：调用 DeepSeek 模型 — 从零开始',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (true) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div class="bg-animation" id="web_bg" style="background-image: url(/img/background.jpg);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/avatar.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">27</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">24</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="not-top-img fixed" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">筎柒的个人笔记</span></a><a class="nav-page-title" href="/"><span class="site-name">LangChain 01：调用 DeepSeek 模型 — 从零开始</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav></header><main class="layout" id="content-inner"><div id="post"><div id="post-info"><h1 class="post-title">LangChain 01：调用 DeepSeek 模型 — 从零开始</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">发表于</span><time datetime="2026-09-02T13:35:00.000Z" title="发表于 2026-09-02 21:35:00">2026-09-02</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Python/">Python</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">2k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>7分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div><article class="container post-content" id="article-container"><h1 id="LangChain-01：调用-DeepSeek-模型-—-从零开始"><a href="#LangChain-01：调用-DeepSeek-模型-—-从零开始" class="headerlink" title="LangChain 01：调用 DeepSeek 模型 — 从零开始"></a>LangChain 01：调用 DeepSeek 模型 — 从零开始</h1><blockquote>
+<p>从零搭建项目，使用 <code>langchain-deepseek</code> 调用 DeepSeek 大模型，完成一次对话。</p>
+</blockquote>
+<hr>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li>一、创建项目与文件</li>
+<li>二、安装依赖</li>
+<li>三、配置 API Key</li>
+<li>四、方案一：显式传入 API Key</li>
+<li>五、方案二：自动读取环境变量（推荐）</li>
+<li>六、两种方案对比</li>
+<li>七、运行与输出</li>
+<li>八、核心概念</li>
+<li>九、常见问题</li>
+</ul>
+<hr>
+<h2 id="一、创建项目与文件"><a href="#一、创建项目与文件" class="headerlink" title="一、创建项目与文件"></a>一、创建项目与文件</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 创建项目目录</span></span><br><span class="line"><span class="built_in">mkdir</span> lesson01</span><br><span class="line"><span class="built_in">cd</span> lesson01</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建代码文件</span></span><br><span class="line"><span class="built_in">touch</span> test.py</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建环境变量文件</span></span><br><span class="line"><span class="built_in">touch</span> .<span class="built_in">env</span></span><br></pre></td></tr></table></figure>
+
+<p>最终目录结构：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">lesson01/</span><br><span class="line">├── test.py    # 主程序</span><br><span class="line">└── .env       # API Key 配置（不要提交到 Git）</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="二、安装依赖"><a href="#二、安装依赖" class="headerlink" title="二、安装依赖"></a>二、安装依赖</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 激活虚拟环境（二选一）</span></span><br><span class="line">conda activate langchain1.2</span><br><span class="line"><span class="comment"># 或</span></span><br><span class="line"><span class="built_in">source</span> .venv/bin/activate</span><br><span class="line"></span><br><span class="line"><span class="comment"># 安装 langchain-deepseek</span></span><br><span class="line">pip install langchain-deepseek</span><br></pre></td></tr></table></figure>
+
+<p><code>langchain-deepseek</code> 会自动安装以下依赖：</p>
+<table>
+<thead>
+<tr>
+<th>包</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>langchain-core</code></td>
+<td>LangChain 核心抽象与接口</td>
+</tr>
+<tr>
+<td><code>langchain-openai</code></td>
+<td>OpenAI 基础组件（底层复用）</td>
+</tr>
+<tr>
+<td><code>openai</code></td>
+<td>OpenAI SDK，负责 HTTP 通信</td>
+</tr>
+<tr>
+<td><code>tiktoken</code></td>
+<td>Token 计数器</td>
+</tr>
+<tr>
+<td><code>langsmith</code></td>
+<td>LangChain 可观测性平台</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="三、配置-API-Key"><a href="#三、配置-API-Key" class="headerlink" title="三、配置 API Key"></a>三、配置 API Key</h2><p>在 <code>.env</code> 文件中写入 DeepSeek 的 API Key：</p>
+<figure class="highlight ini"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="attr">DEEPSEEK_API_KEY</span>=sk-你的密钥</span><br><span class="line"><span class="attr">DEEPSEEK_BASE_URL</span>=https://api.deepseek.com</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p>API Key 从 <a target="_blank" rel="noopener" href="https://platform.deepseek.com/">DeepSeek 开放平台</a> 注册获取。</p>
+</blockquote>
+<blockquote>
+<p><strong>安全提示：</strong> <code>.env</code> 包含密钥，必须在 <code>.gitignore</code> 中添加 <code>.env</code>，防止泄露。</p>
+</blockquote>
+<hr>
+<h2 id="四、方案一：显式传入-API-Key"><a href="#四、方案一：显式传入-API-Key" class="headerlink" title="四、方案一：显式传入 API Key"></a>四、方案一：显式传入 API Key</h2><blockquote>
+<p>手动从环境变量读取 Key 和 URL，显式传给 <code>ChatDeepSeek</code>。</p>
+</blockquote>
+<h3 id="4-1-完整代码"><a href="#4-1-完整代码" class="headerlink" title="4.1 完整代码"></a>4.1 完整代码</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain_deepseek <span class="keyword">import</span> ChatDeepSeek</span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">DEEPSEEK_API_KEY = os.getenv(<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>)</span><br><span class="line">DEEPSEEK_BASE_URL = os.getenv(<span class="string">&quot;DEEPSEEK_BASE_URL&quot;</span>)</span><br><span class="line"></span><br><span class="line">llm_deepseek = ChatDeepSeek(</span><br><span class="line">    model=<span class="string">&quot;deepseek-v4-flash&quot;</span>,</span><br><span class="line">    api_key=DEEPSEEK_API_KEY,</span><br><span class="line">    api_base=DEEPSEEK_BASE_URL,</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">respose = llm_deepseek.invoke(<span class="string">&quot;今天西安天气怎么样&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(respose)</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-2-逐行解析"><a href="#4-2-逐行解析" class="headerlink" title="4.2 逐行解析"></a>4.2 逐行解析</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 第 1 行：导入 os 模块，用于读取环境变量</span></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 2 行：导入 load_dotenv，用于加载 .env 文件中的环境变量</span></span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 3 行：导入 ChatDeepSeek，DeepSeek 模型的核心类</span></span><br><span class="line"><span class="keyword">from</span> langchain_deepseek <span class="keyword">import</span> ChatDeepSeek</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 4 行：加载 .env 文件，override=True 强制用 .env 的值覆盖已有环境变量</span></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 6 行：从环境变量中读取 API Key</span></span><br><span class="line">DEEPSEEK_API_KEY = os.getenv(<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 7 行：从环境变量中读取 API 地址</span></span><br><span class="line">DEEPSEEK_BASE_URL = os.getenv(<span class="string">&quot;DEEPSEEK_BASE_URL&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 9-12 行：创建模型实例，手动传入 api_key 和 api_base</span></span><br><span class="line">llm_deepseek = ChatDeepSeek(</span><br><span class="line">    model=<span class="string">&quot;deepseek-v4-flash&quot;</span>,    <span class="comment"># 指定模型名称</span></span><br><span class="line">    api_key=DEEPSEEK_API_KEY,     <span class="comment"># 显式传入 API Key</span></span><br><span class="line">    api_base=DEEPSEEK_BASE_URL,   <span class="comment"># 显式传入 API 地址</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 14 行：调用模型，传入问题，返回 AIMessage 对象</span></span><br><span class="line">respose = llm_deepseek.invoke(<span class="string">&quot;今天西安天气怎么样&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 15 行：打印完整的 AIMessage 对象</span></span><br><span class="line"><span class="built_in">print</span>(respose)</span><br></pre></td></tr></table></figure>
+
+<p><strong>数据流向：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><span class="line">.env 文件</span><br><span class="line">  │</span><br><span class="line">  ▼</span><br><span class="line">load_dotenv()  ──→  os.environ</span><br><span class="line">  │                      │</span><br><span class="line">  │                      ▼</span><br><span class="line">  │              os.getenv(&quot;DEEPSEEK_API_KEY&quot;)  ──→  DEEPSEEK_API_KEY 变量</span><br><span class="line">  │              os.getenv(&quot;DEEPSEEK_BASE_URL&quot;) ──→  DEEPSEEK_BASE_URL 变量</span><br><span class="line">  │                      │                              │</span><br><span class="line">  │                      └──────────────┬───────────────┘</span><br><span class="line">  ▼                                     ▼</span><br><span class="line">ChatDeepSeek(api_key=..., api_base=...)</span><br><span class="line">  │</span><br><span class="line">  ▼</span><br><span class="line">llm_deepseek.invoke(&quot;今天西安天气怎么样&quot;)</span><br><span class="line">  │</span><br><span class="line">  ▼</span><br><span class="line">AIMessage(content=&quot;今天西安...&quot;)</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="五、方案二：自动读取环境变量（推荐）"><a href="#五、方案二：自动读取环境变量（推荐）" class="headerlink" title="五、方案二：自动读取环境变量（推荐）"></a>五、方案二：自动读取环境变量（推荐）</h2><blockquote>
+<p>不手动传 <code>api_key</code> 和 <code>api_base</code>，<code>ChatDeepSeek</code> 自动从环境变量中发现。</p>
+</blockquote>
+<h3 id="5-1-完整代码"><a href="#5-1-完整代码" class="headerlink" title="5.1 完整代码"></a>5.1 完整代码</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain_deepseek <span class="keyword">import</span> ChatDeepSeek</span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">llm_deepseek = ChatDeepSeek(</span><br><span class="line">    model=<span class="string">&quot;deepseek-v4-flash&quot;</span>,</span><br><span class="line">    <span class="comment"># api_key 和 api_base 不写，自动从环境变量读取</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">respose = llm_deepseek.invoke(<span class="string">&quot;你是谁用一句话概括&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(respose)</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-2-逐行解析"><a href="#5-2-逐行解析" class="headerlink" title="5.2 逐行解析"></a>5.2 逐行解析</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 第 1 行：导入 os 模块</span></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 2 行：导入 load_dotenv</span></span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 3 行：导入 ChatDeepSeek</span></span><br><span class="line"><span class="keyword">from</span> langchain_deepseek <span class="keyword">import</span> ChatDeepSeek</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 4 行：加载 .env 文件</span></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 6-7 行：创建模型实例，只传 model，其余自动发现</span></span><br><span class="line">llm_deepseek = ChatDeepSeek(</span><br><span class="line">    model=<span class="string">&quot;deepseek-v4-flash&quot;</span>,    <span class="comment"># 唯一需要显式指定的参数</span></span><br><span class="line">    <span class="comment"># 内部自动执行：</span></span><br><span class="line">    <span class="comment">#   api_key  ← os.environ[&quot;DEEPSEEK_API_KEY&quot;]</span></span><br><span class="line">    <span class="comment">#   api_base ← os.environ.get(&quot;DEEPSEEK_BASE_URL&quot;, &quot;https://api.deepseek.com&quot;)</span></span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 9 行：调用模型</span></span><br><span class="line">respose = llm_deepseek.invoke(<span class="string">&quot;你是谁用一句话概括&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 第 10 行：打印结果</span></span><br><span class="line"><span class="built_in">print</span>(respose)</span><br></pre></td></tr></table></figure>
+
+<p><strong>数据流向：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line">.env 文件</span><br><span class="line">  │</span><br><span class="line">  ▼</span><br><span class="line">load_dotenv()  ──→  os.environ[&quot;DEEPSEEK_API_KEY&quot;] = &quot;sk-xxx&quot;</span><br><span class="line">                     os.environ[&quot;DEEPSEEK_BASE_URL&quot;] = &quot;https://...&quot;</span><br><span class="line">                         │</span><br><span class="line">                         ▼</span><br><span class="line">          ChatDeepSeek(model=&quot;deepseek-v4-flash&quot;)</span><br><span class="line">            内部自动读取 ↑</span><br><span class="line">  │</span><br><span class="line">  ▼</span><br><span class="line">llm_deepseek.invoke(&quot;你是谁用一句话概括&quot;)</span><br><span class="line">  │</span><br><span class="line">  ▼</span><br><span class="line">AIMessage(content=&quot;我是 DeepSeek...&quot;)</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="六、两种方案对比"><a href="#六、两种方案对比" class="headerlink" title="六、两种方案对比"></a>六、两种方案对比</h2><table>
+<thead>
+<tr>
+<th>对比项</th>
+<th>方案一：显式传入</th>
+<th>方案二：自动读取</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>代码行数</td>
+<td>多 2 行（手动 <code>os.getenv</code>）</td>
+<td>少，更简洁</td>
+</tr>
+<tr>
+<td><code>api_key</code></td>
+<td>手动传 <code>api_key=DEEPSEEK_API_KEY</code></td>
+<td>不传，自动从环境变量发现</td>
+</tr>
+<tr>
+<td><code>api_base</code></td>
+<td>手动传 <code>api_base=DEEPSEEK_BASE_URL</code></td>
+<td>不传，自动发现或使用默认值</td>
+</tr>
+<tr>
+<td>灵活性</td>
+<td>高，可动态指定不同的 Key</td>
+<td>一般，依赖固定变量名</td>
+</tr>
+<tr>
+<td>适用场景</td>
+<td>多 Key 切换、动态配置</td>
+<td><strong>日常开发推荐</strong></td>
+</tr>
+<tr>
+<td>可读性</td>
+<td>参数来源一目了然</td>
+<td>需要知道自动发现规则</td>
+</tr>
+</tbody></table>
+<p><strong>选择建议：</strong></p>
+<ul>
+<li>日常开发、单 Key → <strong>方案二</strong>（自动读取）</li>
+<li>需要切换多个 Key、从数据库&#x2F;配置中心读取 → <strong>方案一</strong>（显式传入）</li>
+</ul>
+<hr>
+<h2 id="七、运行与输出"><a href="#七、运行与输出" class="headerlink" title="七、运行与输出"></a>七、运行与输出</h2><figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">python test.py</span><br></pre></td></tr></table></figure>
+
+<p><strong>输出示例：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">content=&#x27;我是 DeepSeek-V4-Flash，一个由深度求索（DeepSeek）公司自主研发的超大规模语言模型。&#x27; response_metadata=&#123;&#x27;token_usage&#x27;: &#123;&#x27;prompt_tokens&#x27;: 15, &#x27;completion_tokens&#x27;: 22, &#x27;total_tokens&#x27;: 37&#125;, &#x27;model_name&#x27;: &#x27;deepseek-v4-flash&#x27;&#125; id=&#x27;run-xxxxx&#x27;</span><br></pre></td></tr></table></figure>
+
+<p>输出内容解读：</p>
+<table>
+<thead>
+<tr>
+<th>字段</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>content=&#39;...&#39;</code></td>
+<td>模型的回答文本</td>
+</tr>
+<tr>
+<td><code>response_metadata</code></td>
+<td>元数据，包含 token 用量、模型名等</td>
+</tr>
+<tr>
+<td><code>token_usage.prompt_tokens</code></td>
+<td>输入消耗的 token 数</td>
+</tr>
+<tr>
+<td><code>token_usage.completion_tokens</code></td>
+<td>输出消耗的 token 数</td>
+</tr>
+<tr>
+<td><code>token_usage.total_tokens</code></td>
+<td>总消耗 token 数</td>
+</tr>
+<tr>
+<td><code>id</code></td>
+<td>本次调用的唯一标识</td>
+</tr>
+</tbody></table>
+<p><strong>如果只想打印回答文本：</strong></p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">print</span>(respose.content)</span><br><span class="line"><span class="comment"># 输出: 我是 DeepSeek-V4-Flash，一个由深度求索（DeepSeek）公司自主研发的超大规模语言模型。</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="八、核心概念"><a href="#八、核心概念" class="headerlink" title="八、核心概念"></a>八、核心概念</h2><h3 id="8-1-ChatDeepSeek-类"><a href="#8-1-ChatDeepSeek-类" class="headerlink" title="8.1 ChatDeepSeek 类"></a>8.1 ChatDeepSeek 类</h3><p><code>ChatDeepSeek</code> 是 <code>langchain-deepseek</code> 包提供的核心类，用于与 DeepSeek 模型交互。</p>
+<p><strong>继承关系：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">BaseChatModel（LangChain 抽象基类，定义标准接口）</span><br><span class="line">└── BaseChatOpenAI（OpenAI 兼容基础类）</span><br><span class="line">    └── ChatDeepSeek（DeepSeek 专用实现）</span><br></pre></td></tr></table></figure>
+
+<p><strong>构造参数：</strong></p>
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>对应环境变量</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>model</code></td>
+<td>—</td>
+<td>无（必填）</td>
+<td>模型名称</td>
+</tr>
+<tr>
+<td><code>api_key</code></td>
+<td><code>DEEPSEEK_API_KEY</code></td>
+<td>无</td>
+<td>API 密钥</td>
+</tr>
+<tr>
+<td><code>api_base</code></td>
+<td><code>DEEPSEEK_BASE_URL</code></td>
+<td><code>https://api.deepseek.com</code></td>
+<td>API 地址</td>
+</tr>
+<tr>
+<td><code>temperature</code></td>
+<td>—</td>
+<td><code>None</code></td>
+<td>温度，越高越随机</td>
+</tr>
+<tr>
+<td><code>max_tokens</code></td>
+<td>—</td>
+<td><code>None</code></td>
+<td>最大输出 token 数</td>
+</tr>
+<tr>
+<td><code>timeout</code></td>
+<td>—</td>
+<td><code>None</code></td>
+<td>请求超时秒数</td>
+</tr>
+</tbody></table>
+<p><strong>可用模型名称：</strong></p>
+<table>
+<thead>
+<tr>
+<th>模型名</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>deepseek-chat</code></td>
+<td>DeepSeek-V3，通用对话，能力最强</td>
+</tr>
+<tr>
+<td><code>deepseek-v4-flash</code></td>
+<td>快速版，速度快、成本低</td>
+</tr>
+<tr>
+<td><code>deepseek-reasoner</code></td>
+<td>DeepSeek-R1，推理增强，适合复杂逻辑</td>
+</tr>
+</tbody></table>
+<p><strong>标准调用接口（所有 ChatModel 都有）：</strong></p>
+<table>
+<thead>
+<tr>
+<th>方法</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>.invoke()</code></td>
+<td>同步调用，返回完整结果</td>
+</tr>
+<tr>
+<td><code>.stream()</code></td>
+<td>流式调用，逐块返回</td>
+</tr>
+<tr>
+<td><code>.batch()</code></td>
+<td>批量调用，并发处理多个输入</td>
+</tr>
+<tr>
+<td><code>.ainvoke()</code></td>
+<td>异步调用</td>
+</tr>
+<tr>
+<td><code>.astream()</code></td>
+<td>异步流式调用</td>
+</tr>
+</tbody></table>
+<h3 id="8-2-invoke-方法"><a href="#8-2-invoke-方法" class="headerlink" title="8.2 .invoke() 方法"></a>8.2 .invoke() 方法</h3><p><code>.invoke()</code> 是 LangChain 中所有 Runnable 对象的标准同步调用方法。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 传入字符串（最简单）</span></span><br><span class="line">response = llm.invoke(<span class="string">&quot;你好&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 传入消息列表（更灵活，可设置系统提示词）</span></span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> SystemMessage, HumanMessage</span><br><span class="line"></span><br><span class="line">response = llm.invoke([</span><br><span class="line">    SystemMessage(content=<span class="string">&quot;你是一个诗人&quot;</span>),</span><br><span class="line">    HumanMessage(content=<span class="string">&quot;写一首关于春天的诗&quot;</span>),</span><br><span class="line">])</span><br></pre></td></tr></table></figure>
+
+<h3 id="8-3-AIMessage-返回值"><a href="#8-3-AIMessage-返回值" class="headerlink" title="8.3 AIMessage 返回值"></a>8.3 AIMessage 返回值</h3><p><code>.invoke()</code> 返回的是 <code>AIMessage</code> 对象，不是普通字符串：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">response = llm.invoke(<span class="string">&quot;你好&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 常用属性</span></span><br><span class="line"><span class="built_in">print</span>(response.content)           <span class="comment"># 回答文本（最常用）</span></span><br><span class="line"><span class="built_in">print</span>(response.response_metadata) <span class="comment"># 元数据（token 用量等）</span></span><br><span class="line"><span class="built_in">print</span>(response.<span class="built_in">id</span>)                <span class="comment"># 调用 ID</span></span><br><span class="line"><span class="built_in">print</span>(response.usage_metadata)    <span class="comment"># 用量统计</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="8-4-load-dotenv-override-True"><a href="#8-4-load-dotenv-override-True" class="headerlink" title="8.4 load_dotenv(override&#x3D;True)"></a>8.4 load_dotenv(override&#x3D;True)</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>默认值</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>override</code></td>
+<td><code>False</code></td>
+<td><code>False</code>：不覆盖已有环境变量；<code>True</code>：强制用 <code>.env</code> 覆盖</td>
+</tr>
+</tbody></table>
+<p><strong>执行过程：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">.env 文件                    os.environ</span><br><span class="line">─────────────    load_dotenv()    ──────────────</span><br><span class="line">DEEPSEEK_API_KEY=sk-xxx  →  os.environ[&quot;DEEPSEEK_API_KEY&quot;] = &quot;sk-xxx&quot;</span><br><span class="line">DEEPSEEK_BASE_URL=https://...  →  os.environ[&quot;DEEPSEEK_BASE_URL&quot;] = &quot;https://...&quot;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="九、常见问题"><a href="#九、常见问题" class="headerlink" title="九、常见问题"></a>九、常见问题</h2><h3 id="9-1-ModuleNotFoundError-No-module-named-‘langchain-deepseek’"><a href="#9-1-ModuleNotFoundError-No-module-named-‘langchain-deepseek’" class="headerlink" title="9.1 ModuleNotFoundError: No module named ‘langchain_deepseek’"></a>9.1 ModuleNotFoundError: No module named ‘langchain_deepseek’</h3><p><strong>原因：</strong> 包未安装，或安装到了错误的 Python 环境。</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 检查当前 python 路径</span></span><br><span class="line"><span class="built_in">which</span> python</span><br><span class="line"></span><br><span class="line"><span class="comment"># 确认在正确的虚拟环境中安装</span></span><br><span class="line">pip install langchain-deepseek</span><br></pre></td></tr></table></figure>
+
+<h3 id="9-2-AuthenticationError-Invalid-API-key"><a href="#9-2-AuthenticationError-Invalid-API-key" class="headerlink" title="9.2 AuthenticationError: Invalid API key"></a>9.2 AuthenticationError: Invalid API key</h3><p><strong>原因：</strong> API Key 无效或未正确加载。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 验证环境变量是否加载成功</span></span><br><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line"><span class="built_in">print</span>(os.getenv(<span class="string">&quot;DEEPSEEK_API_KEY&quot;</span>))  <span class="comment"># 应输出 sk-xxx...</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="9-3-ConnectionError"><a href="#9-3-ConnectionError" class="headerlink" title="9.3 ConnectionError"></a>9.3 ConnectionError</h3><p><strong>原因：</strong> 网络不通或 <code>DEEPSEEK_BASE_URL</code> 配置错误。</p>
+<p>确认 <code>.env</code> 中的地址为 <code>https://api.deepseek.com</code>（注意不要多加 <code>/v1</code>）。</p>
+<h3 id="9-4-虚拟环境搞混"><a href="#9-4-虚拟环境搞混" class="headerlink" title="9.4 虚拟环境搞混"></a>9.4 虚拟环境搞混</h3><p><strong>检查方法：</strong> 看终端提示符前面的括号：</p>
+<figure class="highlight bash"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line">(.venv) $ pip install langchain-deepseek       <span class="comment"># 装到 .venv</span></span><br><span class="line">(langchain1.2) $ pip install langchain-deepseek <span class="comment"># 装到 conda 环境</span></span><br></pre></td></tr></table></figure>
+
+<p>确保运行 <code>python test.py</code> 时激活的环境与 <code>pip install</code> 时一致。</p>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://mschange.github.io">筎柒</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://mschange.github.io/posts/langchain-lesson01-deepseek-from-scratch/">https://mschange.github.io/posts/langchain-lesson01-deepseek-from-scratch/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://mschange.github.io" target="_blank">筎柒的个人笔记</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Python/">Python</a><a class="post-meta__tags" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a><a class="post-meta__tags" href="/tags/LangChain/">LangChain</a><a class="post-meta__tags" href="/tags/DeepSeek/">DeepSeek</a><a class="post-meta__tags" href="/tags/AI/">AI</a><a class="post-meta__tags" href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/">大模型</a></div><div class="post-share"><div class="social-share" data-image="/img/post-cover.jpg" data-sites="wechat,weibo,qq,facebook,x"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/posts/fastapi-project-07-redis-cache/" title="项目实战 07：Redis 缓存集成（旁路缓存模式）"><img class="cover" src="/img/post-cover.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">项目实战 07：Redis 缓存集成（旁路缓存模式）</div></div><div class="info-2"><div class="info-item-1">项目实战 07：Redis 缓存集成（旁路缓存模式） 先查 Redis、未命中再查 MySQL —— 用旁路缓存把读多写少的新闻接口提速一个数量级。   目录 一、为什么要加缓存 二、Redis 基础知识 三、环境配置 四、Redis 连接配置（config&#x2F;cache_config.py） 五、新闻缓存层（cache&#x2F;news_cache.py） 六、旁路缓存 CRUD（crud&#x2F;news_cache.py） 七、缓存路由（routers&#x2F;news_cache.py） 八、注册路由（main.py） 九、测试 十、缓存策略总结 十一、原版 vs ...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/posts/fastapi-lesson02-request-body-pydantic/" title="第 02 课：FastAPI 请求体与 Pydantic 模型"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-24</div><div class="info-item-2">第 02 课：FastAPI 请求体与 Pydantic 模型</div></div><div class="info-2"><div class="info-item-1">第 02 课：FastAPI 请求体与 Pydantic 模型从 0 到 1 完整实现指南 目录 一、前置知识 二、课程目录结构 三、定义请求模型 四、模型转换 五、嵌套模型 六、自定义验证 七、完整可运行代码 八、测试 九、关键要点 依赖安装   一、前置知识1.1 什么是请求体？请求体（Request Body）是客户端发送给服务器的数据，通常是 JSON 格式。 123456789POST /books/ HTTP/1.1Content-Type: application/json&#123;                          ← 这就是请求体    &quot;b...</div></div></div></a><a class="pagination-related" href="/posts/fastapi-lesson16-delete-data/" title="第 16 课：删除数据"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-30</div><div class="info-item-2">第 16 课：删除数据</div></div><div class="info-2"><div class="info-item-1">第 16 课：删除数据 从 0 到 1 完整实现指南 —— 掌握硬删除、软删除、批量删除与恢复记录。   目录 一、前置知识 二、课程目录结构 三、硬删除（db.delete） 四、软删除（is_deleted 标记） 五、批量删除 六、恢复软删除记录 七、查询时处理软删除状态 八、完整可运行代码 九、测试命令 十、关键要点总结 完整课程总结 数据库初始化 SQL 完整代码 依赖安装   一、前置知识1.1 删除数据的两种方式在数据库操作中，”删除”有两种截然不同的策略：    方式 说明 可恢复 适用场景    硬删除 直接从数据库中物理删除记录 不可恢复 临时数据、缓存数据   软删...</div></div></div></a><a class="pagination-related" href="/posts/fastapi-lesson06-sqlalchemy-orm-models/" title="第 06 课：SQLAlchemy ORM 模型定义"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-26</div><div class="info-item-2">第 06 课：SQLAlchemy ORM 模型定义</div></div><div class="info-2"><div class="info-item-1">第 06 课：SQLAlchemy ORM 模型定义 全面掌握 SQLAlchemy 2.0 风格的 ORM 模型定义：DeclarativeBase、Mapped、mapped_column、各种列类型、约束、索引、默认值、__table_args__ 等。   目录 前置知识 课程目录结构 核心概念总览 Step 1：定义基类 —— DeclarativeBase Step 2：基础模型 —— User 用户表 Step 3：高级列类型 —— Product 商品表 Step 4：约束 —— 数据完整性保障 Step 5：索引 —— 查询性能优化 Step 6：table_args ...</div></div></div></a><a class="pagination-related" href="/posts/fastapi-lesson04-path-query-advanced/" title="第 04 课：FastAPI 路径参数与查询参数深入"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-25</div><div class="info-item-2">第 04 课：FastAPI 路径参数与查询参数深入</div></div><div class="info-2"><div class="info-item-1">第 04 课：FastAPI 路径参数与查询参数深入 深入掌握 FastAPI 中 Path() 和 Query() 的各种高级用法，包括参数验证、别名、正则匹配、废弃标记、列表参数等。   目录 前置知识 课程目录结构 核心概念总览 Step 1：Path() 基础 —— 路径参数数值验证 Step 2：Path() 字符串验证 —— 正则 pattern Step 3：Query() 基础 —— 查询参数验证 Step 4：Query() 必选参数 Step 5：Query() 列表参数 Step 6：alias 别名 Step 7：deprecated 废弃标记 Step 8：综合...</div></div></div></a><a class="pagination-related" href="/posts/fastapi-lesson09-query-data-basics/" title="第 09 课：查询数据基础"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-08-27</div><div class="info-item-2">第 09 课：查询数据基础</div></div><div class="info-2"><div class="info-item-1">第 09 课：查询数据基础 从 0 到 1 完整实现指南 —— 掌握 SQLAlchemy select() 查询、条件过滤、结果提取与 FastAPI 路由集成。   目录 一、前置知识 二、课程目录结构 三、数据库配置与会话管理 四、查询数据流概览 五、查询操作详解 六、完整可运行代码 七、测试命令 八、常见错误与调试 九、关键要点总结 十、课后练习 十一、与下节课的衔接 数据库初始化 SQL 完整代码 依赖安装   一、前置知识1.1 需要掌握的基础概念   知识点 重要程度 说明    SQLAlchemy ORM 模型 必须 了解 DeclarativeBase、Mapped、...</div></div></div></a><a class="pagination-related" href="/posts/fastapi-project-07-redis-cache/" title="项目实战 07：Redis 缓存集成（旁路缓存模式）"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-09-02</div><div class="info-item-2">项目实战 07：Redis 缓存集成（旁路缓存模式）</div></div><div class="info-2"><div class="info-item-1">项目实战 07：Redis 缓存集成（旁路缓存模式） 先查 Redis、未命中再查 MySQL —— 用旁路缓存把读多写少的新闻接口提速一个数量级。   目录 一、为什么要加缓存 二、Redis 基础知识 三、环境配置 四、Redis 连接配置（config&#x2F;cache_config.py） 五、新闻缓存层（cache&#x2F;news_cache.py） 六、旁路缓存 CRUD（crud&#x2F;news_cache.py） 七、缓存路由（routers&#x2F;news_cache.py） 八、注册路由（main.py） 九、测试 十、缓存策略总结 十一、原版 vs ...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#LangChain-01%EF%BC%9A%E8%B0%83%E7%94%A8-DeepSeek-%E6%A8%A1%E5%9E%8B-%E2%80%94-%E4%BB%8E%E9%9B%B6%E5%BC%80%E5%A7%8B"><span class="toc-number">1.</span> <span class="toc-text">LangChain 01：调用 DeepSeek 模型 — 从零开始</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95"><span class="toc-number">1.1.</span> <span class="toc-text">目录</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E5%88%9B%E5%BB%BA%E9%A1%B9%E7%9B%AE%E4%B8%8E%E6%96%87%E4%BB%B6"><span class="toc-number">1.2.</span> <span class="toc-text">一、创建项目与文件</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E5%AE%89%E8%A3%85%E4%BE%9D%E8%B5%96"><span class="toc-number">1.3.</span> <span class="toc-text">二、安装依赖</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E9%85%8D%E7%BD%AE-API-Key"><span class="toc-number">1.4.</span> <span class="toc-text">三、配置 API Key</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E6%96%B9%E6%A1%88%E4%B8%80%EF%BC%9A%E6%98%BE%E5%BC%8F%E4%BC%A0%E5%85%A5-API-Key"><span class="toc-number">1.5.</span> <span class="toc-text">四、方案一：显式传入 API Key</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81"><span class="toc-number">1.5.1.</span> <span class="toc-text">4.1 完整代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-%E9%80%90%E8%A1%8C%E8%A7%A3%E6%9E%90"><span class="toc-number">1.5.2.</span> <span class="toc-text">4.2 逐行解析</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E6%96%B9%E6%A1%88%E4%BA%8C%EF%BC%9A%E8%87%AA%E5%8A%A8%E8%AF%BB%E5%8F%96%E7%8E%AF%E5%A2%83%E5%8F%98%E9%87%8F%EF%BC%88%E6%8E%A8%E8%8D%90%EF%BC%89"><span class="toc-number">1.6.</span> <span class="toc-text">五、方案二：自动读取环境变量（推荐）</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81"><span class="toc-number">1.6.1.</span> <span class="toc-text">5.1 完整代码</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-%E9%80%90%E8%A1%8C%E8%A7%A3%E6%9E%90"><span class="toc-number">1.6.2.</span> <span class="toc-text">5.2 逐行解析</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E4%B8%A4%E7%A7%8D%E6%96%B9%E6%A1%88%E5%AF%B9%E6%AF%94"><span class="toc-number">1.7.</span> <span class="toc-text">六、两种方案对比</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E8%BF%90%E8%A1%8C%E4%B8%8E%E8%BE%93%E5%87%BA"><span class="toc-number">1.8.</span> <span class="toc-text">七、运行与输出</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E6%A0%B8%E5%BF%83%E6%A6%82%E5%BF%B5"><span class="toc-number">1.9.</span> <span class="toc-text">八、核心概念</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#8-1-ChatDeepSeek-%E7%B1%BB"><span class="toc-number">1.9.1.</span> <span class="toc-text">8.1 ChatDeepSeek 类</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-2-invoke-%E6%96%B9%E6%B3%95"><span class="toc-number">1.9.2.</span> <span class="toc-text">8.2 .invoke() 方法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-3-AIMessage-%E8%BF%94%E5%9B%9E%E5%80%BC"><span class="toc-number">1.9.3.</span> <span class="toc-text">8.3 AIMessage 返回值</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-4-load-dotenv-override-True"><span class="toc-number">1.9.4.</span> <span class="toc-text">8.4 load_dotenv(override&#x3D;True)</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98"><span class="toc-number">1.10.</span> <span class="toc-text">九、常见问题</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#9-1-ModuleNotFoundError-No-module-named-%E2%80%98langchain-deepseek%E2%80%99"><span class="toc-number">1.10.1.</span> <span class="toc-text">9.1 ModuleNotFoundError: No module named ‘langchain_deepseek’</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-2-AuthenticationError-Invalid-API-key"><span class="toc-number">1.10.2.</span> <span class="toc-text">9.2 AuthenticationError: Invalid API key</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-3-ConnectionError"><span class="toc-number">1.10.3.</span> <span class="toc-text">9.3 ConnectionError</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#9-4-%E8%99%9A%E6%8B%9F%E7%8E%AF%E5%A2%83%E6%90%9E%E6%B7%B7"><span class="toc-number">1.10.4.</span> <span class="toc-text">9.4 虚拟环境搞混</span></a></li></ol></li></ol></li></ol></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2024 - 2026 By 筎柒</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.7.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.7.0"></script><script src="/js/main.js?v=5.7.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@6.1.14/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"></div><script src="/js/custom.js"></script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.min.js" defer="defer"></script><script>document.addEventListener('DOMContentLoaded', () => {
+  const pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+  window.pjax = new Pjax({
+    elements: 'a:not([target="_blank"]):not([data-fancybox])',
+    selectors: pjaxSelectors,
+    cacheBust: false,
+    analytics: false,
+    scrollRestoration: false
+  })
+
+  const triggerPjaxFn = (val) => {
+    if (!val) return
+    Object.values(val).forEach(fn => {
+      try {
+        fn()
+      } catch (err) {
+        console.debug('Pjax callback failed:', err)
+      }
+    })
+  }
+
+  document.addEventListener('pjax:send', () => {
+    // removeEventListener
+    btf.removeGlobalFnEvent('pjaxSendOnce')
+    btf.removeGlobalFnEvent('themeChange')
+
+    // reset readmode
+    const $bodyClassList = document.body.classList
+    if ($bodyClassList.contains('read-mode')) $bodyClassList.remove('read-mode')
+
+    triggerPjaxFn(window.globalFn.pjaxSend)
+  })
+
+  document.addEventListener('pjax:complete', () => {
+    btf.removeGlobalFnEvent('pjaxCompleteOnce')
+    document.querySelectorAll('script[data-pjax]').forEach(item => {
+      if (!item.parentNode) return
+      const newScript = document.createElement('script')
+      const content = item.text || item.textContent || ''
+      Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+      newScript.appendChild(document.createTextNode(content))
+      item.parentNode.replaceChild(newScript, item)
+    })
+
+    triggerPjaxFn(window.globalFn.pjaxComplete)
+  })
+
+  document.addEventListener('pjax:error', e => {
+    const responseURL = e.request && e.request.responseURL
+    if (e.request && e.request.status === 404) {
+      true
+        ? pjax.loadUrl('/404.html')
+        : responseURL && (window.location.href = responseURL)
+    } else if (responseURL) {
+      window.location.href = responseURL
+    }
+  })
+})</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=5.7.0"></script></div></div></body></html>
