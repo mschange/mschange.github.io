@@ -13157,4 +13157,335 @@
         <tag>面向对象</tag>
       </tags>
   </entry>
+  <entry>
+    <title>LangChain 11：结构化输出完全指南</title>
+    <url>/posts/langchain-lesson11-structured-output/</url>
+    <content><![CDATA[<h1 id="LangChain-11：结构化输出完全指南"><a href="#LangChain-11：结构化输出完全指南" class="headerlink" title="LangChain 11：结构化输出完全指南"></a>LangChain 11：结构化输出完全指南</h1><blockquote>
+<p>从基础 Pydantic 模型到嵌套结构，从 Optional 可选字段到 Literal 枚举约束，系统掌握 <code>with_structured_output()</code> 的全部用法。<br>所有代码均可单独复制运行。</p>
+</blockquote>
+<hr>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li><a href="#%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87">环境准备</a></li>
+<li><a href="#%E4%B8%80%E4%BB%80%E4%B9%88%E6%98%AF%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA">一、什么是结构化输出</a><ul>
+<li><a href="#11-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA">1.1 为什么需要结构化输出</a></li>
+<li><a href="#12-with_structured_output-%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86">1.2 with_structured_output 工作原理</a></li>
+<li><a href="#13-deepseek-%E6%A8%A1%E5%9E%8B%E7%9A%84%E6%B3%A8%E6%84%8F%E4%BA%8B%E9%A1%B9">1.3 DeepSeek 模型的注意事项</a></li>
+</ul>
+</li>
+<li><a href="#%E4%BA%8C%E5%9F%BA%E7%A1%80%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA">二、基础结构化输出</a><ul>
+<li><a href="#21-%E5%AE%9A%E4%B9%89-pydantic-%E6%A8%A1%E5%9E%8B">2.1 定义 Pydantic 模型</a></li>
+<li><a href="#22-%E7%BB%91%E5%AE%9A%E5%B9%B6%E8%B0%83%E7%94%A8">2.2 绑定并调用</a></li>
+<li><a href="#23-%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81">2.3 完整代码</a></li>
+<li><a href="#24-%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C">2.4 运行结果</a></li>
+</ul>
+</li>
+<li><a href="#%E4%B8%89optional-%E5%8F%AF%E9%80%89%E5%AD%97%E6%AE%B5%E4%B8%8E%E9%BB%98%E8%AE%A4%E5%80%BC">三、Optional 可选字段与默认值</a><ul>
+<li><a href="#31-optional-%E7%9A%84%E4%BD%9C%E7%94%A8">3.1 Optional 的作用</a></li>
+<li><a href="#32-%E8%AE%BE%E7%BD%AE%E9%BB%98%E8%AE%A4%E5%80%BC">3.2 设置默认值</a></li>
+<li><a href="#33-%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81">3.3 完整代码</a></li>
+<li><a href="#34-%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C">3.4 运行结果</a></li>
+</ul>
+</li>
+<li><a href="#%E5%9B%9Bliteral-%E6%9E%9A%E4%B8%BE%E7%BA%A6%E6%9D%9F">四、Literal 枚举约束</a><ul>
+<li><a href="#41-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E6%9E%9A%E4%B8%BE%E7%BA%A6%E6%9D%9F">4.1 为什么需要枚举约束</a></li>
+<li><a href="#42-%E4%BD%BF%E7%94%A8-literal-%E9%99%90%E5%88%B6%E5%8F%96%E5%80%BC">4.2 使用 Literal 限制取值</a></li>
+<li><a href="#43-%E4%BD%BF%E7%94%A8-enum-%E6%9E%9A%E4%B8%BE%E7%B1%BB">4.3 使用 Enum 枚举类</a></li>
+<li><a href="#44-%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81">4.4 完整代码</a></li>
+<li><a href="#45-%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C">4.5 运行结果</a></li>
+</ul>
+</li>
+<li><a href="#%E4%BA%94list-%E5%88%97%E8%A1%A8%E7%B1%BB%E5%9E%8B%E6%8F%90%E5%8F%96%E5%A4%9A%E6%9D%A1%E8%AE%B0%E5%BD%95">五、List 列表类型：提取多条记录</a><ul>
+<li><a href="#51-%E5%9C%BA%E6%99%AF%E4%BB%8E%E6%96%87%E6%9C%AC%E4%B8%AD%E6%8F%90%E5%8F%96%E5%A4%9A%E4%B8%AA%E4%BA%BA%E7%89%A9">5.1 场景：从文本中提取多个人物</a></li>
+<li><a href="#52-%E5%AE%9A%E4%B9%89%E5%B5%8C%E5%A5%97%E6%A8%A1%E5%9E%8B">5.2 定义嵌套模型</a></li>
+<li><a href="#53-%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81">5.3 完整代码</a></li>
+<li><a href="#54-%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C">5.4 运行结果</a></li>
+</ul>
+</li>
+<li><a href="#%E5%85%AD%E5%B5%8C%E5%A5%97%E6%A8%A1%E5%9E%8B%E5%A4%8D%E6%9D%82%E7%BB%93%E6%9E%84">六、嵌套模型：复杂结构</a><ul>
+<li><a href="#61-%E5%9C%BA%E6%99%AF%E5%85%AC%E5%8F%B8%E4%BF%A1%E6%81%AF%E5%8C%85%E5%90%AB%E5%9C%B0%E5%9D%80">6.1 场景：公司信息包含地址</a></li>
+<li><a href="#62-%E5%AE%9A%E4%B9%89%E5%B5%8C%E5%A5%97%E7%BB%93%E6%9E%84">6.2 定义嵌套结构</a></li>
+<li><a href="#63-%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81">6.3 完整代码</a></li>
+<li><a href="#64-%E8%BF%90%E8%A1%8C%E7%BB%93%E6%9E%9C">6.4 运行结果</a></li>
+</ul>
+</li>
+<li><a href="#%E4%B8%83%E7%9F%A5%E8%AF%86%E4%BD%93%E7%B3%BB%E6%80%BB%E7%BB%93">七、知识体系总结</a><ul>
+<li><a href="#71-%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA%E5%85%A8%E6%99%AF%E5%9B%BE">7.1 结构化输出全景图</a></li>
+<li><a href="#72-%E5%B8%B8%E7%94%A8%E7%B1%BB%E5%9E%8B%E9%80%9F%E6%9F%A5">7.2 常用类型速查</a></li>
+<li><a href="#73-%E9%80%89%E6%8B%A9%E6%8C%87%E5%8D%97">7.3 选择指南</a></li>
+</ul>
+</li>
+<li><a href="#%E5%85%AB%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98">八、常见问题</a></li>
+</ul>
+<hr>
+<h2 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h2><h3 id="安装依赖"><a href="#安装依赖" class="headerlink" title="安装依赖"></a>安装依赖</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">pip install langchain langchain-deepseek python-dotenv pydantic</span><br></pre></td></tr></table></figure>
+
+<h3 id="配置-env-文件"><a href="#配置-env-文件" class="headerlink" title="配置 .env 文件"></a>配置 .env 文件</h3><figure class="highlight ini"><table><tr><td class="code"><pre><span class="line"><span class="attr">OPENAI_API_KEY</span>=sk-你的密钥</span><br><span class="line"><span class="attr">OPENAI_BASE_URL</span>=https://api.deepseek.com/v1</span><br></pre></td></tr></table></figure>
+
+<h3 id="公共初始化代码"><a href="#公共初始化代码" class="headerlink" title="公共初始化代码"></a>公共初始化代码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># DeepSeek 非思考版本支持结构化输出</span></span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>注意：</strong> <code>deepseek-v4-flash</code> 默认启用思考模式，不支持 <code>with_structured_output()</code>。请使用 <code>deepseek-chat</code> 或其他非思考版本。</p>
+</blockquote>
+<hr>
+<h2 id="一、什么是结构化输出"><a href="#一、什么是结构化输出" class="headerlink" title="一、什么是结构化输出"></a>一、什么是结构化输出</h2><h3 id="1-1-为什么需要结构化输出"><a href="#1-1-为什么需要结构化输出" class="headerlink" title="1.1 为什么需要结构化输出"></a>1.1 为什么需要结构化输出</h3><p>大模型默认返回的是<strong>自由文本</strong>，但在实际开发中，我们经常需要<strong>固定格式</strong>的数据：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>自由文本的问题</th>
+<th>结构化输出的优势</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>提取人物信息</td>
+<td>格式不固定，难以解析</td>
+<td>返回 Pydantic 对象，可直接访问属性</td>
+</tr>
+<tr>
+<td>客服信息提取</td>
+<td>需要正则或二次解析</td>
+<td>字段类型安全，自动校验</td>
+</tr>
+<tr>
+<td>批量数据提取</td>
+<td>格式可能不一致</td>
+<td>每条数据结构完全一致</td>
+</tr>
+</tbody></table>
+<h3 id="1-2-with-structured-output-工作原理"><a href="#1-2-with-structured-output-工作原理" class="headerlink" title="1.2 with_structured_output 工作原理"></a>1.2 with_structured_output 工作原理</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                  with_structured_output 工作原理                   │</span><br><span class="line">└─────────────────────────────────────────────────────────────────┘</span><br><span class="line"></span><br><span class="line">用户代码：</span><br><span class="line">    structured_model = model.with_structured_output(Person)</span><br><span class="line">    result = structured_model.invoke(&quot;张三是一名30岁的软件工程师&quot;)</span><br><span class="line">                         │</span><br><span class="line">                         ▼</span><br><span class="line">┌─────────────────────────────────────────────────────────────────┐</span><br><span class="line">│  LangChain 内部处理                                              │</span><br><span class="line">│                                                                  │</span><br><span class="line">│  1. 将 Person 模型转换为 JSON Schema                             │</span><br><span class="line">│  2. 将 Schema 作为 tool_choice 传给模型                          │</span><br><span class="line">│  3. 模型返回符合 Schema 的 JSON                                  │</span><br><span class="line">│  4. LangChain 将 JSON 解析为 Person 对象                         │</span><br><span class="line">└─────────────────────────────────────────────────────────────────┘</span><br><span class="line">                         │</span><br><span class="line">                         ▼</span><br><span class="line">返回结果：</span><br><span class="line">    Person(name=&#x27;张三&#x27;, age=30, occupation=&#x27;软件工程师&#x27;)</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-3-DeepSeek-模型的注意事项"><a href="#1-3-DeepSeek-模型的注意事项" class="headerlink" title="1.3 DeepSeek 模型的注意事项"></a>1.3 DeepSeek 模型的注意事项</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">DeepSeek 模型版本对比：</span><br><span class="line"></span><br><span class="line">┌────────────────────┬──────────────┬───────────────────────────┐</span><br><span class="line">│ 模型版本            │ 思考模式      │ 支持结构化输出             │</span><br><span class="line">├────────────────────┼──────────────┼───────────────────────────┤</span><br><span class="line">│ deepseek-chat      │ 无           │ ✅ 支持                    │</span><br><span class="line">│ deepseek-reasoner  │ 默认开启      │ ❌ 不支持 tool_choice      │</span><br><span class="line">│ deepseek-v4-flash  │ 默认开启      │ ❌ 不支持（需禁用思考）     │</span><br><span class="line">└────────────────────┴──────────────┴───────────────────────────┘</span><br><span class="line"></span><br><span class="line">解决方案：</span><br><span class="line">  方案1：使用 deepseek-chat（推荐）</span><br><span class="line">  方案2：禁用思考模式 extra_body=&#123;&quot;enable_thinking&quot;: False&#125;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="二、基础结构化输出"><a href="#二、基础结构化输出" class="headerlink" title="二、基础结构化输出"></a>二、基础结构化输出</h2><h3 id="2-1-定义-Pydantic-模型"><a href="#2-1-定义-Pydantic-模型" class="headerlink" title="2.1 定义 Pydantic 模型"></a>2.1 定义 Pydantic 模型</h3><p>使用 Pydantic <code>BaseModel</code> 定义输出结构：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;人物信息&quot;&quot;&quot;</span></span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;姓名&quot;</span>)</span><br><span class="line">    age: <span class="built_in">int</span> = Field(description=<span class="string">&quot;年龄&quot;</span>)</span><br><span class="line">    occupation: <span class="built_in">str</span> = Field(description=<span class="string">&quot;职业&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键点：</strong></p>
+<table>
+<thead>
+<tr>
+<th>要素</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>BaseModel</code></td>
+<td>Pydantic 基类，定义数据结构</td>
+</tr>
+<tr>
+<td><code>Field(description=...)</code></td>
+<td>字段描述，帮助模型理解要提取什么</td>
+</tr>
+<tr>
+<td>类型注解 <code>str</code>、<code>int</code></td>
+<td>约束字段类型</td>
+</tr>
+</tbody></table>
+<h3 id="2-2-绑定并调用"><a href="#2-2-绑定并调用" class="headerlink" title="2.2 绑定并调用"></a>2.2 绑定并调用</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 绑定结构化输出</span></span><br><span class="line">structured_model = model.with_structured_output(Person)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用模型</span></span><br><span class="line">result = structured_model.invoke(<span class="string">&quot;张三是一名30岁的软件工程师&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 访问属性</span></span><br><span class="line"><span class="built_in">print</span>(result.name)       <span class="comment"># 张三</span></span><br><span class="line"><span class="built_in">print</span>(result.age)        <span class="comment"># 30</span></span><br><span class="line"><span class="built_in">print</span>(result.occupation) <span class="comment"># 软件工程师</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="2-3-完整代码"><a href="#2-3-完整代码" class="headerlink" title="2.3 完整代码"></a>2.3 完整代码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义输出结构</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;人物信息&quot;&quot;&quot;</span></span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;姓名&quot;</span>)</span><br><span class="line">    age: <span class="built_in">int</span> = Field(description=<span class="string">&quot;年龄&quot;</span>)</span><br><span class="line">    occupation: <span class="built_in">str</span> = Field(description=<span class="string">&quot;职业&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 绑定结构化输出模式</span></span><br><span class="line">structured_model = model.with_structured_output(Person)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用模型</span></span><br><span class="line">result = structured_model.invoke(<span class="string">&quot;张三是一名30岁的软件工程师&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(result)</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">type</span>(result))</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;姓名：<span class="subst">&#123;result.name&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;年龄：<span class="subst">&#123;result.age&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;职业：<span class="subst">&#123;result.occupation&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-4-运行结果"><a href="#2-4-运行结果" class="headerlink" title="2.4 运行结果"></a>2.4 运行结果</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">name=&#x27;张三&#x27; age=30 occupation=&#x27;软件工程师&#x27;</span><br><span class="line">&lt;class &#x27;__main__.Person&#x27;&gt;</span><br><span class="line">姓名：张三</span><br><span class="line">年龄：30</span><br><span class="line">职业：软件工程师</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="三、Optional-可选字段与默认值"><a href="#三、Optional-可选字段与默认值" class="headerlink" title="三、Optional 可选字段与默认值"></a>三、Optional 可选字段与默认值</h2><h3 id="3-1-Optional-的作用"><a href="#3-1-Optional-的作用" class="headerlink" title="3.1 Optional 的作用"></a>3.1 Optional 的作用</h3><p>当某些字段在输入中<strong>可能不存在</strong>时，使用 <code>Optional</code> 标记为可选：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Optional</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;姓名&quot;</span>)</span><br><span class="line">    age: <span class="type">Optional</span>[<span class="built_in">int</span>] = Field(description=<span class="string">&quot;年龄&quot;</span>)  <span class="comment"># 可选字段</span></span><br><span class="line">    occupation: <span class="built_in">str</span> = Field(description=<span class="string">&quot;职业&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p><strong>效果：</strong> 如果输入中没有提到年龄，<code>age</code> 字段为 <code>None</code> 而不是报错。</p>
+<h3 id="3-2-设置默认值"><a href="#3-2-设置默认值" class="headerlink" title="3.2 设置默认值"></a>3.2 设置默认值</h3><p>可以为可选字段设置默认值：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;姓名&quot;</span>)</span><br><span class="line">    age: <span class="type">Optional</span>[<span class="built_in">int</span>] = Field(default=<span class="number">25</span>, description=<span class="string">&quot;年龄&quot;</span>)  <span class="comment"># 默认 25 岁</span></span><br><span class="line">    occupation: <span class="built_in">str</span> = Field(description=<span class="string">&quot;职业&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p><strong>效果：</strong> 如果输入中没有提到年龄，<code>age</code> 字段使用默认值 <code>25</code>。</p>
+<blockquote>
+<p><strong>注意：</strong> 不同模型供应商对 <code>Optional</code> 和默认值的支持程度不同，需要实际测试。</p>
+</blockquote>
+<h3 id="3-3-完整代码"><a href="#3-3-完整代码" class="headerlink" title="3.3 完整代码"></a>3.3 完整代码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Optional</span></span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义输出结构</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;人物信息&quot;&quot;&quot;</span></span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;姓名&quot;</span>)</span><br><span class="line">    age: <span class="type">Optional</span>[<span class="built_in">int</span>] = Field(default=<span class="number">25</span>, description=<span class="string">&quot;年龄&quot;</span>)</span><br><span class="line">    occupation: <span class="built_in">str</span> = Field(description=<span class="string">&quot;职业&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 绑定结构化输出模式</span></span><br><span class="line">structured_model = model.with_structured_output(Person)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用模型（输入中没有提到年龄）</span></span><br><span class="line">result = structured_model.invoke(<span class="string">&quot;张三是一名软件工程师&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(result)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;姓名：<span class="subst">&#123;result.name&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;年龄：<span class="subst">&#123;result.age&#125;</span>&quot;</span>)  <span class="comment"># 使用默认值 25</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;职业：<span class="subst">&#123;result.occupation&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-4-运行结果"><a href="#3-4-运行结果" class="headerlink" title="3.4 运行结果"></a>3.4 运行结果</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">name=&#x27;张三&#x27; age=25 occupation=&#x27;软件工程师&#x27;</span><br><span class="line">姓名：张三</span><br><span class="line">年龄：25        ← 使用默认值</span><br><span class="line">职业：软件工程师</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="四、Literal-枚举约束"><a href="#四、Literal-枚举约束" class="headerlink" title="四、Literal 枚举约束"></a>四、Literal 枚举约束</h2><h3 id="4-1-为什么需要枚举约束"><a href="#4-1-为什么需要枚举约束" class="headerlink" title="4.1 为什么需要枚举约束"></a>4.1 为什么需要枚举约束</h3><p>某些字段只允许<strong>特定的几个值</strong>，比如：</p>
+<ul>
+<li>紧急程度：低、中、高</li>
+<li>状态：待处理、进行中、已完成</li>
+<li>性别：男、女</li>
+</ul>
+<p>使用 <code>Literal</code> 可以限制模型只能返回这些值。</p>
+<h3 id="4-2-使用-Literal-限制取值"><a href="#4-2-使用-Literal-限制取值" class="headerlink" title="4.2 使用 Literal 限制取值"></a>4.2 使用 Literal 限制取值</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Literal</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomerInfo</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;客户姓名&quot;</span>)</span><br><span class="line">    urgency: <span class="type">Literal</span>[<span class="string">&quot;低&quot;</span>, <span class="string">&quot;中&quot;</span>, <span class="string">&quot;高&quot;</span>] = Field(description=<span class="string">&quot;紧急程度&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p><strong>效果：</strong> 模型只能返回 <code>&quot;低&quot;</code>、<code>&quot;中&quot;</code>、<code>&quot;高&quot;</code> 三个值之一。</p>
+<h3 id="4-3-使用-Enum-枚举类"><a href="#4-3-使用-Enum-枚举类" class="headerlink" title="4.3 使用 Enum 枚举类"></a>4.3 使用 Enum 枚举类</h3><p>也可以使用 Python 的 <code>Enum</code>：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> enum <span class="keyword">import</span> Enum</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Priority</span>(<span class="built_in">str</span>, Enum):</span><br><span class="line">    LOW = <span class="string">&quot;低&quot;</span></span><br><span class="line">    MEDIUM = <span class="string">&quot;中&quot;</span></span><br><span class="line">    HIGH = <span class="string">&quot;高&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomerInfo</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    urgency: Priority = Field(description=<span class="string">&quot;紧急程度&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>推荐：</strong> <code>Literal</code> 更简洁，<code>Enum</code> 更适合复用。</p>
+</blockquote>
+<h3 id="4-4-完整代码"><a href="#4-4-完整代码" class="headerlink" title="4.4 完整代码"></a>4.4 完整代码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Optional</span>, <span class="type">Literal</span></span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义输出结构</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomerInfo</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;客户信息&quot;&quot;&quot;</span></span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;客户姓名&quot;</span>)</span><br><span class="line">    phone: <span class="built_in">str</span> = Field(description=<span class="string">&quot;电话号码&quot;</span>)</span><br><span class="line">    email: <span class="type">Optional</span>[<span class="built_in">str</span>] = Field(description=<span class="string">&quot;邮箱&quot;</span>)</span><br><span class="line">    issue: <span class="built_in">str</span> = Field(description=<span class="string">&quot;问题描述&quot;</span>)</span><br><span class="line">    urgency: <span class="type">Literal</span>[<span class="string">&quot;低&quot;</span>, <span class="string">&quot;中&quot;</span>, <span class="string">&quot;高&quot;</span>] = Field(description=<span class="string">&quot;紧急程度&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 绑定结构化输出模式</span></span><br><span class="line">structured_model = model.with_structured_output(CustomerInfo)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 客服对话</span></span><br><span class="line">conversation = <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">客服：您好，请问有什么可以帮助您？</span></span><br><span class="line"><span class="string">客户：我是小明，电话 138-1034-5678，我的订单一直没发货，很着急！</span></span><br><span class="line"><span class="string">客服：好的，我帮您查一下</span></span><br><span class="line"><span class="string">&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用模型</span></span><br><span class="line">result = structured_model.invoke(<span class="string">f&quot;从以下客服对话中提取客户信息：\n<span class="subst">&#123;conversation&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(result)</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-5-运行结果"><a href="#4-5-运行结果" class="headerlink" title="4.5 运行结果"></a>4.5 运行结果</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">name=&#x27;小明&#x27; phone=&#x27;138-1034-5678&#x27; email=None issue=&#x27;订单一直没发货，很着急&#x27; urgency=&#x27;高&#x27;</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键点：</strong></p>
+<ul>
+<li><code>name</code>：正确提取 “小明”</li>
+<li><code>phone</code>：正确提取 “138-1034-5678”</li>
+<li><code>email</code>：对话中没有邮箱，<code>Optional</code> 字段为 <code>None</code></li>
+<li><code>urgency</code>：模型根据”很着急”推断为 “高”</li>
+</ul>
+<hr>
+<h2 id="五、List-列表类型：提取多条记录"><a href="#五、List-列表类型：提取多条记录" class="headerlink" title="五、List 列表类型：提取多条记录"></a>五、List 列表类型：提取多条记录</h2><h3 id="5-1-场景：从文本中提取多个人物"><a href="#5-1-场景：从文本中提取多个人物" class="headerlink" title="5.1 场景：从文本中提取多个人物"></a>5.1 场景：从文本中提取多个人物</h3><p>输入：”张三 30岁，李四：50岁”</p>
+<p>期望输出：包含两个 Person 对象的列表。</p>
+<h3 id="5-2-定义嵌套模型"><a href="#5-2-定义嵌套模型" class="headerlink" title="5.2 定义嵌套模型"></a>5.2 定义嵌套模型</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">List</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;人物信息&quot;&quot;&quot;</span></span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;姓名&quot;</span>)</span><br><span class="line">    age: <span class="built_in">int</span> = Field(description=<span class="string">&quot;年龄&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PersonList</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;人物列表&quot;&quot;&quot;</span></span><br><span class="line">    people: <span class="type">List</span>[Person]  <span class="comment"># 列表字段</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>关键点：</strong> 用一个外层模型包裹 <code>List[内层模型]</code>。</p>
+<h3 id="5-3-完整代码"><a href="#5-3-完整代码" class="headerlink" title="5.3 完整代码"></a>5.3 完整代码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">List</span></span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义基础人物模型</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;人物信息&quot;&quot;&quot;</span></span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;姓名&quot;</span>)</span><br><span class="line">    age: <span class="built_in">int</span> = Field(description=<span class="string">&quot;年龄&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义包含多个人物的列表模型</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">PersonList</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;人物列表&quot;&quot;&quot;</span></span><br><span class="line">    people: <span class="type">List</span>[Person]</span><br><span class="line"></span><br><span class="line"><span class="comment"># 绑定结构化输出模式</span></span><br><span class="line">structured_model = model.with_structured_output(PersonList)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用模型</span></span><br><span class="line">result = structured_model.invoke(<span class="string">&quot;张三 30岁，李四：50岁&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(result)</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">type</span>(result))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 遍历列表</span></span><br><span class="line"><span class="keyword">for</span> person <span class="keyword">in</span> result.people:</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">f&quot;  <span class="subst">&#123;person.name&#125;</span>，<span class="subst">&#123;person.age&#125;</span>岁&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-4-运行结果"><a href="#5-4-运行结果" class="headerlink" title="5.4 运行结果"></a>5.4 运行结果</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">people=[Person(name=&#x27;张三&#x27;, age=30), Person(name=&#x27;李四&#x27;, age=50)]</span><br><span class="line">&lt;class &#x27;__main__.PersonList&#x27;&gt;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="六、嵌套模型：复杂结构"><a href="#六、嵌套模型：复杂结构" class="headerlink" title="六、嵌套模型：复杂结构"></a>六、嵌套模型：复杂结构</h2><h3 id="6-1-场景：公司信息包含地址"><a href="#6-1-场景：公司信息包含地址" class="headerlink" title="6.1 场景：公司信息包含地址"></a>6.1 场景：公司信息包含地址</h3><p>输入：”腾讯在深圳十八街区”</p>
+<p>期望输出：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">Company(</span><br><span class="line">    name=<span class="string">&#x27;腾讯&#x27;</span>,</span><br><span class="line">    address=Address(city=<span class="string">&#x27;深圳&#x27;</span>, district=<span class="string">&#x27;十八街区&#x27;</span>)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-2-定义嵌套结构"><a href="#6-2-定义嵌套结构" class="headerlink" title="6.2 定义嵌套结构"></a>6.2 定义嵌套结构</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">Address</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;地点描述&quot;&quot;&quot;</span></span><br><span class="line">    city: <span class="built_in">str</span> = Field(description=<span class="string">&quot;城市&quot;</span>)</span><br><span class="line">    district: <span class="built_in">str</span> = Field(description=<span class="string">&quot;区域&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Company</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;公司信息&quot;&quot;&quot;</span></span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;公司名称&quot;</span>)</span><br><span class="line">    address: Address = Field(description=<span class="string">&quot;公司所在地&quot;</span>)  <span class="comment"># 嵌套模型</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="6-3-完整代码"><a href="#6-3-完整代码" class="headerlink" title="6.3 完整代码"></a>6.3 完整代码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义嵌套的地址模型</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Address</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;地点描述&quot;&quot;&quot;</span></span><br><span class="line">    city: <span class="built_in">str</span> = Field(description=<span class="string">&quot;城市&quot;</span>)</span><br><span class="line">    district: <span class="built_in">str</span> = Field(description=<span class="string">&quot;区域&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义公司模型，包含地址信息</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Company</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;公司信息&quot;&quot;&quot;</span></span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;公司名称&quot;</span>)</span><br><span class="line">    address: Address = Field(description=<span class="string">&quot;公司所在地&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 绑定结构化输出模式</span></span><br><span class="line">structured_model = model.with_structured_output(Company)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 调用模型</span></span><br><span class="line">result = structured_model.invoke(<span class="string">&quot;腾讯在深圳十八街区&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(result)</span><br><span class="line"><span class="built_in">print</span>(<span class="built_in">type</span>(result))</span><br><span class="line"></span><br><span class="line"><span class="comment"># 访问嵌套属性</span></span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;公司：<span class="subst">&#123;result.name&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;城市：<span class="subst">&#123;result.address.city&#125;</span>&quot;</span>)</span><br><span class="line"><span class="built_in">print</span>(<span class="string">f&quot;区域：<span class="subst">&#123;result.address.district&#125;</span>&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-4-运行结果"><a href="#6-4-运行结果" class="headerlink" title="6.4 运行结果"></a>6.4 运行结果</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">name=&#x27;腾讯&#x27; address=Address(city=&#x27;深圳&#x27;, district=&#x27;十八街区&#x27;)</span><br><span class="line">&lt;class &#x27;__main__.Company&#x27;&gt;</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="七、知识体系总结"><a href="#七、知识体系总结" class="headerlink" title="七、知识体系总结"></a>七、知识体系总结</h2><h3 id="7-1-结构化输出全景图"><a href="#7-1-结构化输出全景图" class="headerlink" title="7.1 结构化输出全景图"></a>7.1 结构化输出全景图</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                      结构化输出知识全景图                                      │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────────────┘</span><br><span class="line"></span><br><span class="line">                        model.with_structured_output(Schema)</span><br><span class="line">                                        │</span><br><span class="line">                    ┌───────────────────┼───────────────────┐</span><br><span class="line">                    │                   │                   │</span><br><span class="line">                    ▼                   ▼                   ▼</span><br><span class="line">            ┌───────────────┐   ┌───────────────┐   ┌───────────────┐</span><br><span class="line">            │   基础类型     │   │   约束类型     │   │   复合类型     │</span><br><span class="line">            └───────┬───────┘   └───────┬───────┘   └───────┬───────┘</span><br><span class="line">                    │                   │                   │</span><br><span class="line">        ┌───────────┴───────┐   ┌───────┴───────┐   ┌───────┴───────┐</span><br><span class="line">        │                   │   │               │   │               │</span><br><span class="line">        │  str    → 字符串   │   │ Optional     │   │ List[Model]  │</span><br><span class="line">        │  int    → 整数     │   │ → 可选字段    │   │ → 列表嵌套    │</span><br><span class="line">        │  float  → 浮点数   │   │ Literal      │   │ Model 嵌套    │</span><br><span class="line">        │  bool   → 布尔值   │   │ → 枚举约束    │   │ → 复杂结构    │</span><br><span class="line">        │                   │   │ Field(default)│   │               │</span><br><span class="line">        │                   │   │ → 默认值      │   │               │</span><br><span class="line">        └───────────────────┘   └───────────────┘   └───────────────┘</span><br></pre></td></tr></table></figure>
+
+<h3 id="7-2-常用类型速查"><a href="#7-2-常用类型速查" class="headerlink" title="7.2 常用类型速查"></a>7.2 常用类型速查</h3><table>
+<thead>
+<tr>
+<th>类型</th>
+<th>导入</th>
+<th>用途</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>str</code></td>
+<td>内置</td>
+<td>字符串</td>
+<td><code>name: str</code></td>
+</tr>
+<tr>
+<td><code>int</code></td>
+<td>内置</td>
+<td>整数</td>
+<td><code>age: int</code></td>
+</tr>
+<tr>
+<td><code>float</code></td>
+<td>内置</td>
+<td>浮点数</td>
+<td><code>price: float</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td>内置</td>
+<td>布尔值</td>
+<td><code>is_active: bool</code></td>
+</tr>
+<tr>
+<td><code>Optional[T]</code></td>
+<td><code>typing</code></td>
+<td>可选字段</td>
+<td><code>email: Optional[str]</code></td>
+</tr>
+<tr>
+<td><code>Literal[...]</code></td>
+<td><code>typing</code></td>
+<td>枚举约束</td>
+<td><code>status: Literal[&quot;低&quot;,&quot;中&quot;,&quot;高&quot;]</code></td>
+</tr>
+<tr>
+<td><code>List[T]</code></td>
+<td><code>typing</code></td>
+<td>列表</td>
+<td><code>items: List[str]</code></td>
+</tr>
+<tr>
+<td><code>Enum</code></td>
+<td><code>enum</code></td>
+<td>枚举类</td>
+<td><code>class Priority(str, Enum)</code></td>
+</tr>
+<tr>
+<td><code>BaseModel</code></td>
+<td><code>pydantic</code></td>
+<td>嵌套模型</td>
+<td><code>address: Address</code></td>
+</tr>
+<tr>
+<td><code>Field</code></td>
+<td><code>pydantic</code></td>
+<td>字段描述</td>
+<td><code>Field(description=&quot;姓名&quot;)</code></td>
+</tr>
+</tbody></table>
+<h3 id="7-3-选择指南"><a href="#7-3-选择指南" class="headerlink" title="7.3 选择指南"></a>7.3 选择指南</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">你需要从文本中提取信息</span><br><span class="line">    │</span><br><span class="line">    ├── 提取单个对象的几个字段？</span><br><span class="line">    │   └── 基础 BaseModel + Field</span><br><span class="line">    │</span><br><span class="line">    ├── 某些字段可能不存在？</span><br><span class="line">    │   └── 加 Optional[T]</span><br><span class="line">    │</span><br><span class="line">    ├── 字段只能取特定几个值？</span><br><span class="line">    │   └── 用 Literal[&quot;值1&quot;, &quot;值2&quot;]</span><br><span class="line">    │</span><br><span class="line">    ├── 需要提取多条记录？</span><br><span class="line">    │   └── 用 List[InnerModel] 包裹</span><br><span class="line">    │</span><br><span class="line">    └── 字段本身包含子结构？</span><br><span class="line">        └── 定义嵌套 BaseModel</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="八、常见问题"><a href="#八、常见问题" class="headerlink" title="八、常见问题"></a>八、常见问题</h2><h3 id="Q1：with-structured-output-报错-“Thinking-mode-does-not-support-this-tool-choice”？"><a href="#Q1：with-structured-output-报错-“Thinking-mode-does-not-support-this-tool-choice”？" class="headerlink" title="Q1：with_structured_output() 报错 “Thinking mode does not support this tool_choice”？"></a>Q1：<code>with_structured_output()</code> 报错 “Thinking mode does not support this tool_choice”？</h3><p><strong>原因：</strong> DeepSeek 思考模式不支持 <code>tool_choice</code> 参数。</p>
+<p><strong>解决：</strong></p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 方案1：使用 deepseek-chat（推荐）</span></span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 方案2：禁用思考模式</span></span><br><span class="line"><span class="keyword">from</span> langchain_deepseek <span class="keyword">import</span> ChatDeepSeek</span><br><span class="line">model = ChatDeepSeek(</span><br><span class="line">    model=<span class="string">&quot;deepseek-chat&quot;</span>,</span><br><span class="line">    extra_body=&#123;<span class="string">&quot;enable_thinking&quot;</span>: <span class="literal">False</span>&#125;,</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h3 id="Q2：Optional-从哪里导入？"><a href="#Q2：Optional-从哪里导入？" class="headerlink" title="Q2：Optional 从哪里导入？"></a>Q2：<code>Optional</code> 从哪里导入？</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 错误</span></span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> <span class="type">Optional</span>  <span class="comment"># ❌</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 正确</span></span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Optional</span>    <span class="comment"># ✅</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Q3：模型返回的值不在-Literal-范围内怎么办？"><a href="#Q3：模型返回的值不在-Literal-范围内怎么办？" class="headerlink" title="Q3：模型返回的值不在 Literal 范围内怎么办？"></a>Q3：模型返回的值不在 Literal 范围内怎么办？</h3><p>LangChain 会自动校验，如果模型返回了不在范围内的值，会抛出 <code>ValidationError</code>。可以通过以下方式减少这种情况：</p>
+<ul>
+<li>在 <code>Field(description=...)</code> 中明确说明可选值</li>
+<li>使用更清晰的描述</li>
+</ul>
+<h3 id="Q4：如何提取不确定数量的记录？"><a href="#Q4：如何提取不确定数量的记录？" class="headerlink" title="Q4：如何提取不确定数量的记录？"></a>Q4：如何提取不确定数量的记录？</h3><p>使用 <code>List</code> 类型：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">PersonList</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    people: <span class="type">List</span>[Person]  <span class="comment"># 模型会自动判断有几条记录</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Q5：嵌套模型最多可以嵌套几层？"><a href="#Q5：嵌套模型最多可以嵌套几层？" class="headerlink" title="Q5：嵌套模型最多可以嵌套几层？"></a>Q5：嵌套模型最多可以嵌套几层？</h3><p>理论上没有层数限制，但建议不超过 3 层，过深的嵌套会增加模型出错概率：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 推荐：1-2 层嵌套</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Company</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    address: Address  <span class="comment"># 1 层</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 可以：3 层</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Company</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    address: Address  <span class="comment"># 1 层</span></span><br><span class="line">    <span class="comment"># Address 内部还可以有嵌套</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Q6：结构化输出和普通调用的区别？"><a href="#Q6：结构化输出和普通调用的区别？" class="headerlink" title="Q6：结构化输出和普通调用的区别？"></a>Q6：结构化输出和普通调用的区别？</h3><table>
+<thead>
+<tr>
+<th>对比项</th>
+<th>普通调用</th>
+<th>结构化输出</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>返回类型</td>
+<td><code>str</code>（自由文本）</td>
+<td>Pydantic 对象</td>
+</tr>
+<tr>
+<td>格式保证</td>
+<td>无</td>
+<td>严格符合 Schema</td>
+</tr>
+<tr>
+<td>类型安全</td>
+<td>无</td>
+<td>有（自动校验）</td>
+</tr>
+<tr>
+<td>使用方式</td>
+<td><code>model.invoke(...)</code></td>
+<td><code>structured_model.invoke(...)</code></td>
+</tr>
+</tbody></table>
+]]></content>
+      <categories>
+        <category>Python</category>
+      </categories>
+      <tags>
+        <tag>Python</tag>
+        <tag>学习笔记</tag>
+        <tag>Pydantic</tag>
+        <tag>LangChain</tag>
+        <tag>DeepSeek</tag>
+        <tag>AI</tag>
+        <tag>大模型</tag>
+      </tags>
+  </entry>
 </search>
