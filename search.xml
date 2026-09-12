@@ -14388,4 +14388,461 @@
         <tag>Tool</tag>
       </tags>
   </entry>
+  <entry>
+    <title>LangChain 14：Agent 结构化输出完全指南</title>
+    <url>/posts/langchain-lesson14-agent-structured-output/</url>
+    <content><![CDATA[<h1 id="LangChain-14：Agent-结构化输出完全指南"><a href="#LangChain-14：Agent-结构化输出完全指南" class="headerlink" title="LangChain 14：Agent 结构化输出完全指南"></a>LangChain 14：Agent 结构化输出完全指南</h1><blockquote>
+<p>Agent 结构化输出的三种策略（ProviderStrategy &#x2F; ToolStrategy &#x2F; AutoStrategy）、五种 Schema 定义方式（Pydantic &#x2F; TypedDict &#x2F; JSON Schema &#x2F; @dataclass &#x2F; Union）、多工具实战、自定义消息内容。<br>所有代码均可单独复制运行。</p>
+</blockquote>
+<hr>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li><a href="#%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87">环境准备</a></li>
+<li><a href="#%E4%B8%80agent-%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA-vs-%E6%A8%A1%E5%9E%8B%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA">一、Agent 结构化输出 vs 模型结构化输出</a><ul>
+<li><a href="#11-%E6%A0%B8%E5%BF%83%E5%8C%BA%E5%88%AB">1.1 核心区别</a></li>
+<li><a href="#12-%E6%95%B0%E6%8D%AE%E6%B5%81%E8%BD%AC%E5%AF%B9%E6%AF%94">1.2 数据流转对比</a></li>
+</ul>
+</li>
+<li><a href="#%E4%BA%8C%E4%B8%89%E7%A7%8D%E5%93%8D%E5%BA%94%E7%AD%96%E7%95%A5response-strategy">二、三种响应策略（Response Strategy）</a><ul>
+<li><a href="#21-%E7%AD%96%E7%95%A5%E6%80%BB%E8%A7%88">2.1 策略总览</a></li>
+<li><a href="#22-providerstrategy--%E6%A8%A1%E5%9E%8B%E5%8E%9F%E7%94%9F%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA">2.2 ProviderStrategy —— 模型原生结构化输出</a></li>
+<li><a href="#23-toolstrategy--%E5%B7%A5%E5%85%B7%E8%B0%83%E7%94%A8%E6%96%B9%E5%BC%8F">2.3 ToolStrategy —— 工具调用方式</a></li>
+<li><a href="#24-autostrategy--%E7%9B%B4%E6%8E%A5%E4%BC%A0%E5%85%A5%E7%B1%BB%E5%9E%8B--%E8%87%AA%E5%8A%A8%E9%80%89%E6%8B%A9">2.4 AutoStrategy &#x2F; 直接传入类型 —— 自动选择</a></li>
+<li><a href="#25-%E4%B8%89%E7%A7%8D%E7%AD%96%E7%95%A5%E5%AF%B9%E6%AF%94">2.5 三种策略对比</a></li>
+</ul>
+</li>
+<li><a href="#%E4%B8%89toolstrategy--%E4%BA%94%E7%A7%8D-schema-%E5%AE%9A%E4%B9%89%E6%96%B9%E5%BC%8F">三、ToolStrategy + 五种 Schema 定义方式</a><ul>
+<li><a href="#31-pydantic-basemodel">3.1 Pydantic BaseModel</a></li>
+<li><a href="#32-typeddict--annotated">3.2 TypedDict + Annotated</a></li>
+<li><a href="#33-json-schema-%E5%AD%97%E5%85%B8">3.3 JSON Schema 字典</a></li>
+<li><a href="#34-dataclass">3.4 @dataclass</a></li>
+<li><a href="#35-union-%E5%A4%9A-schema-%E8%81%94%E5%90%88">3.5 Union 多 Schema 联合</a></li>
+</ul>
+</li>
+<li><a href="#%E5%9B%9B%E4%BA%94%E7%A7%8D-schema-%E6%96%B9%E5%BC%8F%E5%85%A8%E9%9D%A2%E5%AF%B9%E6%AF%94">四、五种 Schema 方式全面对比</a></li>
+<li><a href="#%E4%BA%94toolstrategy--%E5%A4%9A%E5%B7%A5%E5%85%B7%E5%AE%9E%E6%88%98">五、ToolStrategy + 多工具实战</a><ul>
+<li><a href="#51-pydantic--%E5%A4%9A%E5%B7%A5%E5%85%B7">5.1 Pydantic + 多工具</a></li>
+<li><a href="#52-typeddict--%E5%A4%9A%E5%B7%A5%E5%85%B7">5.2 TypedDict + 多工具</a></li>
+<li><a href="#53-json-schema--%E5%A4%9A%E5%B7%A5%E5%85%B7">5.3 JSON Schema + 多工具</a></li>
+</ul>
+</li>
+<li><a href="#%E5%85%AD%E8%87%AA%E5%AE%9A%E4%B9%89-toolmessage-%E5%86%85%E5%AE%B9tool_message_content">六、自定义 ToolMessage 内容（tool_message_content）</a><ul>
+<li><a href="#61-%E4%B8%BA%E4%BB%80%E4%B9%88%E9%9C%80%E8%A6%81%E8%87%AA%E5%AE%9A%E4%B9%89">6.1 为什么需要自定义</a></li>
+<li><a href="#62-%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81">6.2 完整代码</a></li>
+<li><a href="#63-%E6%95%88%E6%9E%9C%E5%AF%B9%E6%AF%94">6.3 效果对比</a></li>
+</ul>
+</li>
+<li><a href="#%E4%B8%83agent-%E7%BB%93%E6%9E%84%E5%8C%96%E8%BE%93%E5%87%BA%E6%89%A7%E8%A1%8C%E6%B5%81%E7%A8%8B%E5%85%A8%E6%99%AF%E5%9B%BE">七、Agent 结构化输出执行流程全景图</a></li>
+<li><a href="#%E5%85%AB%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98">八、常见问题</a></li>
+</ul>
+<hr>
+<h2 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h2><h3 id="安装依赖"><a href="#安装依赖" class="headerlink" title="安装依赖"></a>安装依赖</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">pip install langchain langchain-deepseek python-dotenv pydantic langchain-tavily rich</span><br></pre></td></tr></table></figure>
+
+<h3 id="配置-env-文件"><a href="#配置-env-文件" class="headerlink" title="配置 .env 文件"></a>配置 .env 文件</h3><figure class="highlight ini"><table><tr><td class="code"><pre><span class="line"><span class="attr">OPENAI_API_KEY</span>=sk-你的密钥</span><br><span class="line"><span class="attr">OPENAI_BASE_URL</span>=https://api.deepseek.com/v1</span><br></pre></td></tr></table></figure>
+
+<h3 id="公共初始化代码"><a href="#公共初始化代码" class="headerlink" title="公共初始化代码"></a>公共初始化代码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="一、Agent-结构化输出-vs-模型结构化输出"><a href="#一、Agent-结构化输出-vs-模型结构化输出" class="headerlink" title="一、Agent 结构化输出 vs 模型结构化输出"></a>一、Agent 结构化输出 vs 模型结构化输出</h2><h3 id="1-1-核心区别"><a href="#1-1-核心区别" class="headerlink" title="1.1 核心区别"></a>1.1 核心区别</h3><table>
+<thead>
+<tr>
+<th align="left">维度</th>
+<th align="left">模型的结构化输出</th>
+<th align="left">Agent 结构化输出</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>操作对象</strong></td>
+<td align="left">作用于大模型对象</td>
+<td align="left">作用于 Agent</td>
+</tr>
+<tr>
+<td align="left"><strong>绑定方式</strong></td>
+<td align="left"><code>model.with_structured_output(Schema)</code></td>
+<td align="left"><code>create_agent(model, response_format=...)</code></td>
+</tr>
+<tr>
+<td align="left"><strong>解析时机</strong></td>
+<td align="left">每次模型调用生成 AIMessage 时解析</td>
+<td align="left">仅在 Agent 决定”任务结束”并输出最终答案时解析</td>
+</tr>
+<tr>
+<td align="left"><strong>数据流转</strong></td>
+<td align="left">模型 → 结构化对象</td>
+<td align="left">模型 → 工具 → 反思 → … → 结构化对象</td>
+</tr>
+<tr>
+<td align="left"><strong>适用场景</strong></td>
+<td align="left">单次、确定性任务（提取字段、翻译、分类）</td>
+<td align="left">多步、复杂推理任务（查文档后汇总报表）</td>
+</tr>
+</tbody></table>
+<h3 id="1-2-数据流转对比"><a href="#1-2-数据流转对比" class="headerlink" title="1.2 数据流转对比"></a>1.2 数据流转对比</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                    模型结构化输出（with_structured_output）               │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                         │</span><br><span class="line">│   用户输入 ──→ 模型 ──→ 直接返回结构化对象                               │</span><br><span class="line">│                                                                         │</span><br><span class="line">│   一步到位，没有中间过程                                                 │</span><br><span class="line">│                                                                         │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────────┘</span><br><span class="line"></span><br><span class="line">┌─────────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                    Agent 结构化输出（response_format）                    │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                         │</span><br><span class="line">│   用户输入 ──→ Agent                                                    │</span><br><span class="line">│                  │                                                      │</span><br><span class="line">│                  ├──→ 调用工具A ──→ 获取结果                             │</span><br><span class="line">│                  ├──→ 调用工具B ──→ 获取结果                             │</span><br><span class="line">│                  ├──→ 分析推理...                                        │</span><br><span class="line">│                  │                                                      │</span><br><span class="line">│                  └──→ 最终输出结构化对象                                 │</span><br><span class="line">│                                                                         │</span><br><span class="line">│   多步推理，最终才生成结构化结果                                          │</span><br><span class="line">│                                                                         │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="二、三种响应策略（Response-Strategy）"><a href="#二、三种响应策略（Response-Strategy）" class="headerlink" title="二、三种响应策略（Response Strategy）"></a>二、三种响应策略（Response Strategy）</h2><h3 id="2-1-策略总览"><a href="#2-1-策略总览" class="headerlink" title="2.1 策略总览"></a>2.1 策略总览</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│              create_agent(response_format=???) 的三种策略             │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                     │</span><br><span class="line">│   response_format =                                                 │</span><br><span class="line">│       │                                                             │</span><br><span class="line">│       ├── ProviderStrategy(Schema)   ← 模型原生结构化输出            │</span><br><span class="line">│       │                                                             │</span><br><span class="line">│       ├── ToolStrategy(Schema)       ← 工具调用方式                  │</span><br><span class="line">│       │                                                             │</span><br><span class="line">│       └── Schema（直接传入类型）      ← AutoStrategy 自动选择        │</span><br><span class="line">│                                                                     │</span><br><span class="line">│   ResponseFormat = ToolStrategy | ProviderStrategy | AutoStrategy   │</span><br><span class="line">│                                                                     │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-2-ProviderStrategy-——-模型原生结构化输出"><a href="#2-2-ProviderStrategy-——-模型原生结构化输出" class="headerlink" title="2.2 ProviderStrategy —— 模型原生结构化输出"></a>2.2 ProviderStrategy —— 模型原生结构化输出</h3><p>使用<strong>模型提供商的原生结构化输出功能</strong>实现结构化输出。</p>
+<p>“原生结构化输出”指的是 LLM 提供商通过 API 直接提供的、在模型响应阶段就<strong>强制保证输出格式符合预定规范</strong>的能力，在模型生成内容的源头确保结构化准确性。</p>
+<p>适用于支持原生结构化输出的模型，比如 OpenAI、Anthropic Claude 或 xAI Grok 等。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=ProviderStrategy(ContractInfo)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-3-ToolStrategy-——-工具调用方式"><a href="#2-3-ToolStrategy-——-工具调用方式" class="headerlink" title="2.3 ToolStrategy —— 工具调用方式"></a>2.3 ToolStrategy —— 工具调用方式</h3><p>对于不支持原生结构化输出的模型，LangChain 采用 <strong>ToolStrategy 工具调用</strong>的方式实现结构化输出。</p>
+<p>此策略兼容绝大多数<strong>支持工具调用</strong>的现代模型，其核心原理是：</p>
+<ol>
+<li>动态创建一个**”虚拟工具”**</li>
+<li>该工具的输入参数对应着期望的数据结构</li>
+<li>当模型需要生成最终答案时，系统引导模型”调用”这个虚拟工具</li>
+<li>从而间接产生符合要求的结构化数据</li>
+</ol>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ToolStrategy</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=ToolStrategy(schema=ContractInfo)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p><strong>ToolStrategy 工作原理图：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                    ToolStrategy 工作原理                              │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                     │</span><br><span class="line">│  1. 定义 Schema：ContractInfo(name, email, phone)                   │</span><br><span class="line">│         │                                                           │</span><br><span class="line">│         ▼                                                           │</span><br><span class="line">│  2. ToolStrategy 创建虚拟工具：                                      │</span><br><span class="line">│     工具名：ContractInfo                                            │</span><br><span class="line">│     参数：&#123;name: str, email: str, phone: str&#125;                       │</span><br><span class="line">│         │                                                           │</span><br><span class="line">│         ▼                                                           │</span><br><span class="line">│  3. 模型&quot;调用&quot;这个虚拟工具：                                        │</span><br><span class="line">│     tool_calls: [&#123;name: &quot;ContractInfo&quot;, args: &#123;name: &quot;小明&quot;, ...&#125;&#125;] │</span><br><span class="line">│         │                                                           │</span><br><span class="line">│         ▼                                                           │</span><br><span class="line">│  4. Agent 自动将 tool_calls 的 args 解析为结构化对象：               │</span><br><span class="line">│     structured_response = ContractInfo(name=&quot;小明&quot;, ...)            │</span><br><span class="line">│                                                                     │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-4-AutoStrategy-直接传入类型-——-自动选择"><a href="#2-4-AutoStrategy-直接传入类型-——-自动选择" class="headerlink" title="2.4 AutoStrategy &#x2F; 直接传入类型 —— 自动选择"></a>2.4 AutoStrategy &#x2F; 直接传入类型 —— 自动选择</h3><p>当直接传入一个定义类型时，LangChain 会自动包装为 <strong>AutoStrategy</strong>，触发自动选择策略：</p>
+<ul>
+<li>如果模型支持原生结构化输出（如 OpenAI、Anthropic Claude），则优先使用 <strong>ProviderStrategy</strong></li>
+<li>否则使用 <strong>ToolStrategy</strong></li>
+</ul>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 直接传入 Schema 类，LangChain 自动选择策略</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=ContractInfo   <span class="comment"># 自动包装为 AutoStrategy</span></span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<blockquote>
+<p><strong>版本说明</strong>：在 LangChain 1.0 及以上版本中，直接传递模式（如 <code>response_format=ContractInfo</code>）不再支持，必须显式使用 <code>ToolStrategy</code> 或 <code>ProviderStrategy</code>。经过测试，目前 LangChain 1.2 版本还可使用直接传入方式。</p>
+</blockquote>
+<h3 id="2-5-三种策略对比"><a href="#2-5-三种策略对比" class="headerlink" title="2.5 三种策略对比"></a>2.5 三种策略对比</h3><table>
+<thead>
+<tr>
+<th>对比项</th>
+<th align="center">ProviderStrategy</th>
+<th align="center">ToolStrategy</th>
+<th align="center">AutoStrategy（直接传入）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>原理</strong></td>
+<td align="center">模型原生能力</td>
+<td align="center">虚拟工具调用</td>
+<td align="center">自动选择</td>
+</tr>
+<tr>
+<td><strong>兼容性</strong></td>
+<td align="center">仅支持原生结构化输出的模型</td>
+<td align="center">兼容绝大多数模型</td>
+<td align="center">取决于模型</td>
+</tr>
+<tr>
+<td><strong>可靠性</strong></td>
+<td align="center">最高（源头保证）</td>
+<td align="center">高（工具调用机制）</td>
+<td align="center">自动适配</td>
+</tr>
+<tr>
+<td><strong>显式程度</strong></td>
+<td align="center">显式指定</td>
+<td align="center">显式指定</td>
+<td align="center">隐式（自动推断）</td>
+</tr>
+<tr>
+<td><strong>适用模型</strong></td>
+<td align="center">OpenAI &#x2F; Claude &#x2F; Grok</td>
+<td align="center">DeepSeek &#x2F; 大部分现代模型</td>
+<td align="center">任意</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="三、ToolStrategy-五种-Schema-定义方式"><a href="#三、ToolStrategy-五种-Schema-定义方式" class="headerlink" title="三、ToolStrategy + 五种 Schema 定义方式"></a>三、ToolStrategy + 五种 Schema 定义方式</h2><h3 id="3-1-Pydantic-BaseModel"><a href="#3-1-Pydantic-BaseModel" class="headerlink" title="3.1 Pydantic BaseModel"></a>3.1 Pydantic BaseModel</h3><p><strong>最推荐的方式</strong>，功能最全，支持字段描述、默认值、可选字段、枚举约束等。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ToolStrategy</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ContractInfo</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;用户的联系方式&quot;&quot;&quot;</span></span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;用户的姓名&quot;</span>)</span><br><span class="line">    email: <span class="built_in">str</span> = Field(description=<span class="string">&quot;用户的邮箱&quot;</span>)</span><br><span class="line">    phone: <span class="built_in">str</span> = Field(description=<span class="string">&quot;用户的电话&quot;</span>)</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=ToolStrategy(schema=ContractInfo)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">response = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;从以下信息中提取用户信息，小明的邮箱是sdfsdfas@test.com,电话是13000000000&quot;</span>&#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(response[<span class="string">&quot;structured_response&quot;</span>])</span><br><span class="line"><span class="comment"># ContractInfo(name=&#x27;小明&#x27;, email=&#x27;sdfsdfas@test.com&#x27;, phone=&#x27;13000000000&#x27;)</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>返回值</strong>：Pydantic 对象，用 <code>.</code> 访问属性。</p>
+<h3 id="3-2-TypedDict-Annotated"><a href="#3-2-TypedDict-Annotated" class="headerlink" title="3.2 TypedDict + Annotated"></a>3.2 TypedDict + Annotated</h3><p>轻量方式，不需要 Pydantic，用 <code>Annotated</code> 为字段添加描述。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ToolStrategy</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated</span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ContactInfo</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;用户的联系方式&quot;&quot;&quot;</span></span><br><span class="line">    name: Annotated[<span class="built_in">str</span>, ..., <span class="string">&quot;用户姓名&quot;</span>]</span><br><span class="line">    email: Annotated[<span class="built_in">str</span>, ..., <span class="string">&quot;用户邮箱地址&quot;</span>]</span><br><span class="line">    phone: Annotated[<span class="built_in">str</span>, ..., <span class="string">&quot;用户的手机号&quot;</span>]</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=ToolStrategy(schema=ContactInfo)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">response = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;从以下信息中提取用户信息，小明的邮箱是sdfsdfas@test.com,电话是13000000000&quot;</span>&#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(response[<span class="string">&quot;structured_response&quot;</span>])</span><br><span class="line"><span class="comment"># &#123;&#x27;name&#x27;: &#x27;小明&#x27;, &#x27;email&#x27;: &#x27;sdfsdfas@test.com&#x27;, &#x27;phone&#x27;: &#x27;13000000000&#x27;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>返回值</strong>：<code>dict</code>，用 <code>[]</code> 访问。</p>
+<h3 id="3-3-JSON-Schema-字典"><a href="#3-3-JSON-Schema-字典" class="headerlink" title="3.3 JSON Schema 字典"></a>3.3 JSON Schema 字典</h3><p>最灵活的方式，适合已有 JSON Schema 或从外部导入的场景。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ToolStrategy</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line">json_schema = &#123;</span><br><span class="line">    <span class="string">&quot;title&quot;</span>: <span class="string">&quot;ContactInfo&quot;</span>,</span><br><span class="line">    <span class="string">&quot;description&quot;</span>: <span class="string">&quot;用户的联系方式&quot;</span>,</span><br><span class="line">    <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">    <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;name&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;用户姓名&quot;</span>,</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;email&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;用户邮箱地址&quot;</span>,</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;phone&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;用户的手机号&quot;</span>,</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;name&quot;</span>, <span class="string">&quot;email&quot;</span>, <span class="string">&quot;phone&quot;</span>]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=ToolStrategy(schema=json_schema)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">response = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;从以下信息中提取用户信息，小明的邮箱是sdfsdfas@test.com,电话是13000000000&quot;</span>&#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(response[<span class="string">&quot;structured_response&quot;</span>])</span><br><span class="line"><span class="comment"># &#123;&#x27;name&#x27;: &#x27;小明&#x27;, &#x27;email&#x27;: &#x27;sdfsdfas@test.com&#x27;, &#x27;phone&#x27;: &#x27;13000000000&#x27;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>注意</strong>：JSON Schema 字典必须有 <code>&quot;title&quot;</code> 字段，否则 LangChain 无法将其转换为工具名称。</p>
+<p><strong>返回值</strong>：<code>dict</code>，用 <code>[]</code> 访问。</p>
+<h3 id="3-4-dataclass"><a href="#3-4-dataclass" class="headerlink" title="3.4 @dataclass"></a>3.4 @dataclass</h3><p>使用 Python 标准库，轻量但功能有限。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ToolStrategy</span><br><span class="line"><span class="keyword">from</span> dataclasses <span class="keyword">import</span> dataclass, field</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ContractInfo</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;用户的联系方式&quot;&quot;&quot;</span></span><br><span class="line">    name: <span class="built_in">str</span> = field(metadata=&#123;<span class="string">&quot;description&quot;</span>: <span class="string">&quot;用户的姓名&quot;</span>&#125;)</span><br><span class="line">    email: <span class="built_in">str</span> = field(metadata=&#123;<span class="string">&quot;description&quot;</span>: <span class="string">&quot;用户的邮箱&quot;</span>&#125;)</span><br><span class="line">    phone: <span class="built_in">str</span> = field(metadata=&#123;<span class="string">&quot;description&quot;</span>: <span class="string">&quot;用户的电话&quot;</span>&#125;)</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=ToolStrategy(schema=ContractInfo)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">response = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;从以下信息中提取用户信息，小明的邮箱是sdfsdfas@test.com,电话是13000000000&quot;</span>&#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="built_in">print</span>(response[<span class="string">&quot;structured_response&quot;</span>])</span><br><span class="line"><span class="comment"># ContractInfo(name=&#x27;小明&#x27;, email=&#x27;sdfsdfas@test.com&#x27;, phone=&#x27;13000000000&#x27;)</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>注意</strong>：</p>
+<ul>
+<li><code>@dataclass</code> 的字段描述用 <code>field(metadata=&#123;&quot;description&quot;: &quot;...&quot;&#125;)</code>，<strong>不是</strong> Pydantic 的 <code>Field(description=...)</code></li>
+<li><code>@dataclass</code> 不支持 <code>Literal</code> 枚举约束</li>
+<li>在 ToolStrategy 中，<code>@dataclass</code> 返回的是 dataclass 对象</li>
+</ul>
+<h3 id="3-5-Union-多-Schema-联合"><a href="#3-5-Union-多-Schema-联合" class="headerlink" title="3.5 Union 多 Schema 联合"></a>3.5 Union 多 Schema 联合</h3><p>当需要从多种可能的结构中选择时，使用 <code>Union</code> 定义多个 Schema。</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ToolStrategy</span><br><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Union</span></span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ContactInfo</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;用户的联系方式&quot;&quot;&quot;</span></span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;用户姓名&quot;</span>)</span><br><span class="line">    email: <span class="built_in">str</span> = Field(description=<span class="string">&quot;用户邮箱地址&quot;</span>)</span><br><span class="line">    phone: <span class="built_in">str</span> = Field(description=<span class="string">&quot;用户的手机号&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">EventInfo</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;事件详情&quot;&quot;&quot;</span></span><br><span class="line">    event_name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;事件名称&quot;</span>)</span><br><span class="line">    date: <span class="built_in">str</span> = Field(description=<span class="string">&quot;事件发生日期&quot;</span>)</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=ToolStrategy(</span><br><span class="line">        schema=<span class="type">Union</span>[ContactInfo, EventInfo]</span><br><span class="line">    )</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 输入联系人信息 → 返回 ContactInfo</span></span><br><span class="line">response = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;从以下信息中提取用户信息，小明的邮箱是sdfsdfas@test.com,电话是13000000000&quot;</span>&#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;)</span><br><span class="line"><span class="built_in">print</span>(response[<span class="string">&quot;structured_response&quot;</span>])</span><br><span class="line"><span class="comment"># ContactInfo(name=&#x27;小明&#x27;, email=&#x27;sdfsdfas@test.com&#x27;, phone=&#x27;13000000000&#x27;)</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 输入事件信息 → 返回 EventInfo</span></span><br><span class="line">response = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;从这段话中抽取结构化信息：2026年导游报名人数突破1万人&quot;</span>&#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;)</span><br><span class="line"><span class="built_in">print</span>(response[<span class="string">&quot;structured_response&quot;</span>])</span><br><span class="line"><span class="comment"># EventInfo(event_name=&#x27;导游报名人数突破1万人&#x27;, date=&#x27;2026年&#x27;)</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>工作原理</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                    Union[ContactInfo, EventInfo] 工作原理            │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                     │</span><br><span class="line">│  ToolStrategy 创建两个虚拟工具：                                     │</span><br><span class="line">│    1. ContactInfo(name, email, phone)                               │</span><br><span class="line">│    2. EventInfo(event_name, date)                                   │</span><br><span class="line">│                                                                     │</span><br><span class="line">│  模型根据输入内容，选择调用哪个&quot;工具&quot;：                               │</span><br><span class="line">│    - 输入包含姓名/邮箱/电话 → 调用 ContactInfo                      │</span><br><span class="line">│    - 输入包含事件/日期 → 调用 EventInfo                              │</span><br><span class="line">│                                                                     │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="四、五种-Schema-方式全面对比"><a href="#四、五种-Schema-方式全面对比" class="headerlink" title="四、五种 Schema 方式全面对比"></a>四、五种 Schema 方式全面对比</h2><table>
+<thead>
+<tr>
+<th>对比项</th>
+<th align="center">Pydantic</th>
+<th align="center">TypedDict+Annotated</th>
+<th align="center">JSON Schema</th>
+<th align="center">@dataclass</th>
+<th align="center">Union</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>返回值</strong></td>
+<td align="center">Pydantic 对象</td>
+<td align="center"><code>dict</code></td>
+<td align="center"><code>dict</code></td>
+<td align="center">dataclass 对象</td>
+<td align="center">取决于内部类型</td>
+</tr>
+<tr>
+<td><strong>属性访问</strong></td>
+<td align="center"><code>result.name</code></td>
+<td align="center"><code>result[&quot;name&quot;]</code></td>
+<td align="center"><code>result[&quot;name&quot;]</code></td>
+<td align="center"><code>result.name</code></td>
+<td align="center">取决于选中类型</td>
+</tr>
+<tr>
+<td><strong>字段描述</strong></td>
+<td align="center"><code>Field(description=)</code></td>
+<td align="center"><code>Annotated[T, &quot;描述&quot;]</code></td>
+<td align="center"><code>&quot;description&quot;</code></td>
+<td align="center"><code>field(metadata=)</code></td>
+<td align="center">各类型独立定义</td>
+</tr>
+<tr>
+<td><strong>默认值</strong></td>
+<td align="center"><code>Field(default=)</code></td>
+<td align="center">不支持</td>
+<td align="center"><code>&quot;default&quot;</code></td>
+<td align="center"><code>field(default=)</code></td>
+<td align="center">各类型独立定义</td>
+</tr>
+<tr>
+<td><strong>可选字段</strong></td>
+<td align="center"><code>Optional[T]</code></td>
+<td align="center"><code>Optional[T]</code></td>
+<td align="center">不在 required 中</td>
+<td align="center">不支持</td>
+<td align="center">各类型独立定义</td>
+</tr>
+<tr>
+<td><strong>枚举约束</strong></td>
+<td align="center"><code>Literal[&quot;a&quot;,&quot;b&quot;]</code></td>
+<td align="center"><code>Literal[&quot;a&quot;,&quot;b&quot;]</code></td>
+<td align="center"><code>&quot;enum&quot;</code></td>
+<td align="center">不支持</td>
+<td align="center">各类型独立定义</td>
+</tr>
+<tr>
+<td><strong>嵌套模型</strong></td>
+<td align="center">支持</td>
+<td align="center">支持</td>
+<td align="center">支持</td>
+<td align="center">支持</td>
+<td align="center">支持</td>
+</tr>
+<tr>
+<td><strong>运行时校验</strong></td>
+<td align="center">有</td>
+<td align="center">无</td>
+<td align="center">无</td>
+<td align="center">无</td>
+<td align="center">有（Pydantic 类型）</td>
+</tr>
+<tr>
+<td><strong>第三方依赖</strong></td>
+<td align="center"><code>pydantic</code></td>
+<td align="center">无</td>
+<td align="center">无</td>
+<td align="center">无</td>
+<td align="center"><code>pydantic</code></td>
+</tr>
+<tr>
+<td><strong>推荐度</strong></td>
+<td align="center">⭐⭐⭐⭐⭐</td>
+<td align="center">⭐⭐⭐⭐</td>
+<td align="center">⭐⭐⭐</td>
+<td align="center">⭐⭐⭐</td>
+<td align="center">⭐⭐⭐⭐⭐</td>
+</tr>
+</tbody></table>
+<p><strong>选择建议：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                    Schema 方式选择指南                               │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                     │</span><br><span class="line">│   需要完整功能（默认值/枚举/校验）？                                  │</span><br><span class="line">│       ├── 是 → Pydantic BaseModel（推荐）                           │</span><br><span class="line">│       └── 否 ↓                                                      │</span><br><span class="line">│                                                                     │</span><br><span class="line">│   不想引入 Pydantic 依赖？                                          │</span><br><span class="line">│       ├── 是 → TypedDict + Annotated                                │</span><br><span class="line">│       └── 否 ↓                                                      │</span><br><span class="line">│                                                                     │</span><br><span class="line">│   已有 JSON Schema 或从外部导入？                                     │</span><br><span class="line">│       ├── 是 → JSON Schema 字典                                     │</span><br><span class="line">│       └── 否 ↓                                                      │</span><br><span class="line">│                                                                     │</span><br><span class="line">│   需要根据输入选择不同结构？                                          │</span><br><span class="line">│       ├── 是 → Union[A, B]                                          │</span><br><span class="line">│       └── 否 → 用 Pydantic 就对了                                    │</span><br><span class="line">│                                                                     │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="五、ToolStrategy-多工具实战"><a href="#五、ToolStrategy-多工具实战" class="headerlink" title="五、ToolStrategy + 多工具实战"></a>五、ToolStrategy + 多工具实战</h2><p>以下实战案例展示 Agent 如何<strong>先调用真实工具获取信息，再输出结构化结果</strong>。</p>
+<h3 id="5-1-Pydantic-多工具"><a href="#5-1-Pydantic-多工具" class="headerlink" title="5.1 Pydantic + 多工具"></a>5.1 Pydantic + 多工具</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Literal</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ToolStrategy</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> SystemMessage</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 工具 1：搜索客户数据库</span></span><br><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search_customer_database</span>(<span class="params">query: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    在客户数据库中搜索信息</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        query (str): 客户查询字符串，例如 &quot;张三&quot; 或 &quot;李四&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 客户记录字符串，包含客户姓名、等级、最近购买日期和累计消费</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;张三&quot;</span> <span class="keyword">in</span> query.lower():</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;客户记录：张三，VIP客户，最近购买日期：2026-01-15，累计消费：$15,000&quot;</span></span><br><span class="line">    <span class="keyword">elif</span> <span class="string">&quot;李四&quot;</span> <span class="keyword">in</span> query.lower():</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;客户记录：李四，普通客户，最近购买日期：2025-12-20，累计消费：$3,200&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 工具 2：发送感谢邮件</span></span><br><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">send_email</span>(<span class="params">customer: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    发送感谢邮件</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        customer (str): 客户名称，例如 &quot;张三&quot; 或 &quot;李四&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 确认消息，包含已发送的客户名称</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;已向 <span class="subst">&#123;customer&#125;</span> 发送感谢邮件&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义结构化输出 Schema</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomerAnalysis</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;客户分析报告&quot;&quot;&quot;</span></span><br><span class="line">    customer_name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;客户姓名&quot;</span>)</span><br><span class="line">    customer_tier: <span class="type">Literal</span>[<span class="string">&quot;潜在客户&quot;</span>, <span class="string">&quot;普通客户&quot;</span>, <span class="string">&quot;VIP客户&quot;</span>, <span class="string">&quot;流失风险&quot;</span>] = Field(</span><br><span class="line">        default=<span class="string">&quot;潜在客户&quot;</span>, description=<span class="string">&quot;客户等级&quot;</span></span><br><span class="line">    )</span><br><span class="line">    recent_activity: <span class="built_in">str</span> = Field(default=<span class="literal">None</span>, description=<span class="string">&quot;最近活动&quot;</span>)</span><br><span class="line">    spending_level: <span class="type">Literal</span>[<span class="string">&quot;低&quot;</span>, <span class="string">&quot;中&quot;</span>, <span class="string">&quot;高&quot;</span>] = Field(default=<span class="literal">None</span>, description=<span class="string">&quot;消费水平&quot;</span>)</span><br><span class="line">    send_email: <span class="built_in">bool</span> = Field(default=<span class="literal">False</span>, description=<span class="string">&quot;是否已发送感谢邮件&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 创建 Agent</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    system_prompt=SystemMessage(content=<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">        请分析指定客户的情况：</span></span><br><span class="line"><span class="string">        1. 先搜索客户数据库了解最新情况</span></span><br><span class="line"><span class="string">        2. 如果是VIP客户，则发送感谢邮件</span></span><br><span class="line"><span class="string">        3. 基于搜索结果生成结构化分析报告</span></span><br><span class="line"><span class="string">        4. 如果找不到客户信息，则返回空对象，不发送感谢邮件</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span>),</span><br><span class="line">    tools=[search_customer_database, send_email],</span><br><span class="line">    response_format=ToolStrategy(CustomerAnalysis)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 执行分析</span></span><br><span class="line">result = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请分析客户张三&quot;</span>&#125;]</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p><strong>执行流程：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">用户：&quot;请分析客户张三&quot;</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">Agent 调用 search_customer_database(&quot;张三&quot;)</span><br><span class="line">    → &quot;客户记录：张三，VIP客户，累计消费：$15,000&quot;</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">Agent 判断是 VIP → 调用 send_email(&quot;张三&quot;)</span><br><span class="line">    → &quot;已向 张三 发送感谢邮件&quot;</span><br><span class="line">    │</span><br><span class="line">    ▼</span><br><span class="line">Agent 生成结构化报告：</span><br><span class="line">    structured_response = CustomerAnalysis(</span><br><span class="line">        customer_name=&#x27;张三&#x27;,</span><br><span class="line">        customer_tier=&#x27;VIP客户&#x27;,</span><br><span class="line">        recent_activity=&#x27;最近购买日期：2026-01-15&#x27;,</span><br><span class="line">        spending_level=&#x27;高&#x27;,</span><br><span class="line">        send_email=True</span><br><span class="line">    )</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-2-TypedDict-多工具"><a href="#5-2-TypedDict-多工具" class="headerlink" title="5.2 TypedDict + 多工具"></a>5.2 TypedDict + 多工具</h3><p>与 Pydantic 版本相同的工具，但 Schema 用 TypedDict 定义：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> Annotated, <span class="type">Optional</span>, <span class="type">Literal</span></span><br><span class="line"><span class="keyword">from</span> typing_extensions <span class="keyword">import</span> TypedDict</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ToolStrategy</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomerAnalysis</span>(<span class="title class_ inherited__">TypedDict</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;客户分析报告&quot;&quot;&quot;</span></span><br><span class="line">    customer_name: Annotated[<span class="type">Optional</span>[<span class="built_in">str</span>], <span class="literal">None</span>, <span class="string">&quot;客户姓名&quot;</span>]</span><br><span class="line">    customer_tier: Annotated[<span class="type">Literal</span>[<span class="string">&quot;潜在客户&quot;</span>, <span class="string">&quot;普通客户&quot;</span>, <span class="string">&quot;VIP客户&quot;</span>, <span class="string">&quot;流失风险&quot;</span>], <span class="string">&quot;客户等级&quot;</span>]</span><br><span class="line">    recent_activity: Annotated[<span class="type">Optional</span>[<span class="built_in">str</span>], <span class="literal">None</span>, <span class="string">&quot;最近活动&quot;</span>]</span><br><span class="line">    spending_level: Annotated[<span class="type">Optional</span>[<span class="type">Literal</span>[<span class="string">&quot;低&quot;</span>, <span class="string">&quot;中&quot;</span>, <span class="string">&quot;高&quot;</span>]], <span class="literal">None</span>, <span class="string">&quot;消费水平&quot;</span>]</span><br><span class="line">    send_email: Annotated[<span class="built_in">bool</span>, <span class="literal">False</span>, <span class="string">&quot;是否已发送感谢邮件&quot;</span>]</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    system_prompt=SystemMessage(content=<span class="string">&quot;...&quot;</span>),</span><br><span class="line">    tools=[search_customer_database, send_email],</span><br><span class="line">    response_format=ToolStrategy(CustomerAnalysis)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p><strong>与 Pydantic 版本的区别：</strong></p>
+<table>
+<thead>
+<tr>
+<th>对比项</th>
+<th>Pydantic 版</th>
+<th>TypedDict 版</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>返回值</td>
+<td><code>CustomerAnalysis(...)</code> 对象</td>
+<td><code>dict</code></td>
+</tr>
+<tr>
+<td>字段描述</td>
+<td><code>Field(description=...)</code></td>
+<td><code>Annotated[T, &quot;描述&quot;]</code></td>
+</tr>
+<tr>
+<td>默认值</td>
+<td><code>Field(default=...)</code></td>
+<td><code>Annotated[T, default, &quot;描述&quot;]</code></td>
+</tr>
+<tr>
+<td>类型校验</td>
+<td>有（运行时自动校验）</td>
+<td>无</td>
+</tr>
+</tbody></table>
+<h3 id="5-3-JSON-Schema-多工具"><a href="#5-3-JSON-Schema-多工具" class="headerlink" title="5.3 JSON Schema + 多工具"></a>5.3 JSON Schema + 多工具</h3><p>同样的工具，Schema 用 JSON Schema 字典定义：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">customer_analysis_schema = &#123;</span><br><span class="line">    <span class="string">&quot;title&quot;</span>: <span class="string">&quot;CustomerAnalysis&quot;</span>,</span><br><span class="line">    <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>,</span><br><span class="line">    <span class="string">&quot;description&quot;</span>: <span class="string">&quot;客户分析报告&quot;</span>,</span><br><span class="line">    <span class="string">&quot;properties&quot;</span>: &#123;</span><br><span class="line">        <span class="string">&quot;customer_name&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">            <span class="string">&quot;default&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;客户姓名&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;customer_tier&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">            <span class="string">&quot;enum&quot;</span>: [<span class="string">&quot;潜在客户&quot;</span>, <span class="string">&quot;普通客户&quot;</span>, <span class="string">&quot;VIP客户&quot;</span>, <span class="string">&quot;流失风险&quot;</span>],</span><br><span class="line">            <span class="string">&quot;default&quot;</span>: <span class="string">&quot;潜在客户&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;客户等级&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;recent_activity&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">            <span class="string">&quot;default&quot;</span>: <span class="string">&quot;&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;最近活动&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;spending_level&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;string&quot;</span>,</span><br><span class="line">            <span class="string">&quot;enum&quot;</span>: [<span class="string">&quot;低&quot;</span>, <span class="string">&quot;中&quot;</span>, <span class="string">&quot;高&quot;</span>],</span><br><span class="line">            <span class="string">&quot;default&quot;</span>: <span class="string">&quot;低&quot;</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;消费水平&quot;</span></span><br><span class="line">        &#125;,</span><br><span class="line">        <span class="string">&quot;send_email&quot;</span>: &#123;</span><br><span class="line">            <span class="string">&quot;type&quot;</span>: <span class="string">&quot;boolean&quot;</span>,</span><br><span class="line">            <span class="string">&quot;default&quot;</span>: <span class="literal">False</span>,</span><br><span class="line">            <span class="string">&quot;description&quot;</span>: <span class="string">&quot;是否已发送感谢邮件&quot;</span></span><br><span class="line">        &#125;</span><br><span class="line">    &#125;,</span><br><span class="line">    <span class="string">&quot;required&quot;</span>: [<span class="string">&quot;customer_name&quot;</span>, <span class="string">&quot;customer_tier&quot;</span>, <span class="string">&quot;recent_activity&quot;</span>, <span class="string">&quot;spending_level&quot;</span>]</span><br><span class="line">&#125;</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    system_prompt=SystemMessage(content=<span class="string">&quot;...&quot;</span>),</span><br><span class="line">    tools=[search_customer_database, send_email],</span><br><span class="line">    response_format=ToolStrategy(customer_analysis_schema)</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<p><strong>JSON Schema 与 Pydantic 的对应关系：</strong></p>
+<table>
+<thead>
+<tr>
+<th>Pydantic</th>
+<th>JSON Schema</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>str</code></td>
+<td><code>&quot;type&quot;: &quot;string&quot;</code></td>
+</tr>
+<tr>
+<td><code>int</code></td>
+<td><code>&quot;type&quot;: &quot;integer&quot;</code></td>
+</tr>
+<tr>
+<td><code>bool</code></td>
+<td><code>&quot;type&quot;: &quot;boolean&quot;</code></td>
+</tr>
+<tr>
+<td><code>Literal[&quot;a&quot;, &quot;b&quot;]</code></td>
+<td><code>&quot;enum&quot;: [&quot;a&quot;, &quot;b&quot;]</code></td>
+</tr>
+<tr>
+<td><code>Field(description=...)</code></td>
+<td><code>&quot;description&quot;: &quot;...&quot;</code></td>
+</tr>
+<tr>
+<td><code>Field(default=...)</code></td>
+<td><code>&quot;default&quot;: ...</code></td>
+</tr>
+<tr>
+<td>必填字段</td>
+<td><code>&quot;required&quot;: [...]</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="六、自定义-ToolMessage-内容（tool-message-content）"><a href="#六、自定义-ToolMessage-内容（tool-message-content）" class="headerlink" title="六、自定义 ToolMessage 内容（tool_message_content）"></a>六、自定义 ToolMessage 内容（tool_message_content）</h2><h3 id="6-1-为什么需要自定义"><a href="#6-1-为什么需要自定义" class="headerlink" title="6.1 为什么需要自定义"></a>6.1 为什么需要自定义</h3><p>当 ToolStrategy 执行完毕后，会在对话历史中生成一条 <code>ToolMessage</code>。默认情况下，这条消息包含完整的结构化数据：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">ToolMessage: &quot;Returning structured response: name=&#x27;小明&#x27; email=&#x27;sdfsdfas@test.com&#x27; phone=&#x27;13000000000&#x27;&quot;</span><br></pre></td></tr></table></figure>
+
+<p>通过 <code>tool_message_content</code> 参数，可以<strong>自定义这条消息的内容</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>好处</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>更自然的消息</strong></td>
+<td>用友好的确认信息替代原始数据</td>
+</tr>
+<tr>
+<td><strong>减少 token 消耗</strong></td>
+<td>简短消息比完整数据块更省 token</td>
+</tr>
+<tr>
+<td><strong>用户体验更好</strong></td>
+<td>对话流中不暴露内部数据结构</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p><strong>注意</strong>：无论 <code>tool_message_content</code> 如何设置，结构化数据都会正确存入 <code>result[&quot;structured_response&quot;]</code>，自定义消息<strong>仅影响对话历史</strong>。</p>
+</blockquote>
+<h3 id="6-2-完整代码"><a href="#6-2-完整代码" class="headerlink" title="6.2 完整代码"></a>6.2 完整代码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Union</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ToolStrategy</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ContactInfo</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;用户的联系方式&quot;&quot;&quot;</span></span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;用户姓名&quot;</span>)</span><br><span class="line">    email: <span class="built_in">str</span> = Field(description=<span class="string">&quot;用户邮箱地址&quot;</span>)</span><br><span class="line">    phone: <span class="built_in">str</span> = Field(description=<span class="string">&quot;用户的手机号&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">EventInfo</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;事件详情&quot;&quot;&quot;</span></span><br><span class="line">    event_name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;事件名称&quot;</span>)</span><br><span class="line">    date: <span class="built_in">str</span> = Field(description=<span class="string">&quot;事件发生日期&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 设置 tool_message_content 自定义 ToolMessage 内容</span></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=ToolStrategy(</span><br><span class="line">        schema=<span class="type">Union</span>[ContactInfo, EventInfo],</span><br><span class="line">        tool_message_content=<span class="string">&quot;已成功抽取信息&quot;</span>    <span class="comment"># ← 自定义消息</span></span><br><span class="line">    )</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line">response = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;从这段话中抽取结构化信息：2026年导游报名人数突破1万人&quot;</span>&#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-3-效果对比"><a href="#6-3-效果对比" class="headerlink" title="6.3 效果对比"></a>6.3 效果对比</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                    不设置 tool_message_content                       │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                     │</span><br><span class="line">│  ToolMessage:                                                       │</span><br><span class="line">│  &quot;Returning structured response: event_name=&#x27;导游报名人数突破1万人&#x27;  │</span><br><span class="line">│   date=&#x27;2026年&#x27;&quot;                                                    │</span><br><span class="line">│                                                                     │</span><br><span class="line">│  → 包含完整数据，token 消耗大                                       │</span><br><span class="line">│                                                                     │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────┘</span><br><span class="line"></span><br><span class="line">┌─────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                    设置 tool_message_content=&quot;已成功抽取信息&quot;         │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                     │</span><br><span class="line">│  ToolMessage:                                                       │</span><br><span class="line">│  &quot;已成功抽取信息&quot;                                                    │</span><br><span class="line">│                                                                     │</span><br><span class="line">│  → 简短确认，token 消耗小                                           │</span><br><span class="line">│  → structured_response 仍然正确返回完整数据                          │</span><br><span class="line">│                                                                     │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="七、Agent-结构化输出执行流程全景图"><a href="#七、Agent-结构化输出执行流程全景图" class="headerlink" title="七、Agent 结构化输出执行流程全景图"></a>七、Agent 结构化输出执行流程全景图</h2><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                Agent 结构化输出完整执行流程                               │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                         │</span><br><span class="line">│  开始                                                                   │</span><br><span class="line">│    │                                                                    │</span><br><span class="line">│    ▼                                                                    │</span><br><span class="line">│  初始化模型 + 定义工具 + 定义 Schema                                    │</span><br><span class="line">│    │                                                                    │</span><br><span class="line">│    ▼                                                                    │</span><br><span class="line">│  create_agent(model, tools, response_format=ToolStrategy(Schema))       │</span><br><span class="line">│    │                                                                    │</span><br><span class="line">│    ▼                                                                    │</span><br><span class="line">│  传入 messages                                                          │</span><br><span class="line">│    │                                                                    │</span><br><span class="line">│    ▼                                                                    │</span><br><span class="line">│  调用模型                                                               │</span><br><span class="line">│    │                                                                    │</span><br><span class="line">│    ▼                                                                    │</span><br><span class="line">│  模型决策 ──→ 需要调用工具？                                            │</span><br><span class="line">│                  │                                                      │</span><br><span class="line">│                 是 ──→ 执行工具函数                                      │</span><br><span class="line">│                  │        │                                             │</span><br><span class="line">│                  │        ▼                                             │</span><br><span class="line">│                  │   ToolMessage（工具结果）                              │</span><br><span class="line">│                  │        │                                             │</span><br><span class="line">│                  │        ▼                                             │</span><br><span class="line">│                  │   拼接消息，再次调用模型                              │</span><br><span class="line">│                  │        │                                             │</span><br><span class="line">│                  │        ▼                                             │</span><br><span class="line">│                  │   还需要工具？──→ 是 → 继续循环                       │</span><br><span class="line">│                  │        │                                            │</span><br><span class="line">│                  │       否                                            │</span><br><span class="line">│                  │        │                                             │</span><br><span class="line">│                  ▼        ▼                                             │</span><br><span class="line">│          模型决定输出结构化数据（调用&quot;虚拟工具&quot;）                         │</span><br><span class="line">│                  │                                                     │</span><br><span class="line">│                  ▼                                                     │</span><br><span class="line">│          tool_calls: [&#123;name: &quot;Schema名&quot;, args: &#123;...&#125;&#125;]                 │</span><br><span class="line">│                  │                                                     │</span><br><span class="line">│                  ▼                                                     │</span><br><span class="line">│          Agent 将 args 解析为结构化对象                                  │</span><br><span class="line">│                  │                                                     │</span><br><span class="line">│                  ▼                                                     │</span><br><span class="line">│          生成 ToolMessage（可自定义内容）                                │</span><br><span class="line">│                  │                                                     │</span><br><span class="line">│                  ▼                                                     │</span><br><span class="line">│          返回 &#123;&quot;messages&quot;: [...], &quot;structured_response&quot;: Schema(...)&#125;   │</span><br><span class="line">│                  │                                                     │</span><br><span class="line">│                  ▼                                                     │</span><br><span class="line">│          结束                                                           │</span><br><span class="line">│                                                                         │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="八、常见问题"><a href="#八、常见问题" class="headerlink" title="八、常见问题"></a>八、常见问题</h2><h3 id="Q1：response-format-ContractInfo-和-response-format-ToolStrategy-ContractInfo-有什么区别？"><a href="#Q1：response-format-ContractInfo-和-response-format-ToolStrategy-ContractInfo-有什么区别？" class="headerlink" title="Q1：response_format=ContractInfo 和 response_format=ToolStrategy(ContractInfo) 有什么区别？"></a>Q1：<code>response_format=ContractInfo</code> 和 <code>response_format=ToolStrategy(ContractInfo)</code> 有什么区别？</h3><ul>
+<li>直接传入 <code>ContractInfo</code>：LangChain 自动包装为 <code>AutoStrategy</code>，根据模型能力自动选择 ProviderStrategy 或 ToolStrategy</li>
+<li>显式传入 <code>ToolStrategy(ContractInfo)</code>：强制使用工具调用方式</li>
+</ul>
+<p>在当前版本（LangChain 1.2）中两种方式都可以使用，但建议显式使用策略以获得更可控的行为。</p>
+<h3 id="Q2：ProviderStrategy-和-ToolStrategy-应该选哪个？"><a href="#Q2：ProviderStrategy-和-ToolStrategy-应该选哪个？" class="headerlink" title="Q2：ProviderStrategy 和 ToolStrategy 应该选哪个？"></a>Q2：<code>ProviderStrategy</code> 和 <code>ToolStrategy</code> 应该选哪个？</h3><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>推荐策略</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>使用 OpenAI &#x2F; Claude 等支持原生结构化输出的模型</td>
+<td><code>ProviderStrategy</code></td>
+</tr>
+<tr>
+<td>使用 DeepSeek 等其他模型</td>
+<td><code>ToolStrategy</code></td>
+</tr>
+<tr>
+<td>不确定模型支持哪种</td>
+<td>直接传 Schema（AutoStrategy 自动选择）</td>
+</tr>
+</tbody></table>
+<h3 id="Q3：tool-message-content-会影响-structured-response-吗？"><a href="#Q3：tool-message-content-会影响-structured-response-吗？" class="headerlink" title="Q3：tool_message_content 会影响 structured_response 吗？"></a>Q3：<code>tool_message_content</code> 会影响 <code>structured_response</code> 吗？</h3><p><strong>不会</strong>。<code>tool_message_content</code> 只影响对话历史中的 <code>ToolMessage</code> 内容，结构化数据始终正确存入 <code>result[&quot;structured_response&quot;]</code>。</p>
+<h3 id="Q4：Union-多-Schema-时，模型怎么选择用哪个？"><a href="#Q4：Union-多-Schema-时，模型怎么选择用哪个？" class="headerlink" title="Q4：Union 多 Schema 时，模型怎么选择用哪个？"></a>Q4：Union 多 Schema 时，模型怎么选择用哪个？</h3><p>模型会根据用户输入的内容语义自动判断。例如：</p>
+<ul>
+<li>输入包含姓名&#x2F;邮箱&#x2F;电话 → 选择 <code>ContactInfo</code></li>
+<li>输入包含事件&#x2F;日期 → 选择 <code>EventInfo</code></li>
+</ul>
+<h3 id="Q5：-dataclass-的-field-报错-unexpected-keyword-argument-description-？"><a href="#Q5：-dataclass-的-field-报错-unexpected-keyword-argument-description-？" class="headerlink" title="Q5：@dataclass 的 field() 报错 unexpected keyword argument &#39;description&#39;？"></a>Q5：@dataclass 的 <code>field()</code> 报错 <code>unexpected keyword argument &#39;description&#39;</code>？</h3><p><code>dataclasses.field()</code> 不支持 <code>description</code> 参数。正确写法：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 错误（混用了 Pydantic 语法）</span></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span>:</span><br><span class="line">    name: <span class="built_in">str</span> = field(<span class="literal">None</span>, description=<span class="string">&quot;姓名&quot;</span>)    <span class="comment"># ❌</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 正确</span></span><br><span class="line"><span class="meta">@dataclass</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">Person</span>:</span><br><span class="line">    name: <span class="built_in">str</span> = field(metadata=&#123;<span class="string">&quot;description&quot;</span>: <span class="string">&quot;姓名&quot;</span>&#125;)    <span class="comment"># ✅</span></span><br></pre></td></tr></table></figure>
+
+<p>如果需要 <code>Literal</code> 枚举约束、运行时校验等高级功能，建议使用 Pydantic <code>BaseModel</code> 而非 <code>@dataclass</code>。</p>
+<h3 id="Q6：JSON-Schema-报错-Unsupported-function？"><a href="#Q6：JSON-Schema-报错-Unsupported-function？" class="headerlink" title="Q6：JSON Schema 报错 Unsupported function？"></a>Q6：JSON Schema 报错 <code>Unsupported function</code>？</h3><p>JSON Schema 字典必须有 <code>&quot;title&quot;</code> 字段，作为虚拟工具的名称：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 错误：缺少 title</span></span><br><span class="line">schema = &#123;<span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>, <span class="string">&quot;properties&quot;</span>: &#123;...&#125;&#125;    <span class="comment"># ❌</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 正确：包含 title</span></span><br><span class="line">schema = &#123;<span class="string">&quot;title&quot;</span>: <span class="string">&quot;ContactInfo&quot;</span>, <span class="string">&quot;type&quot;</span>: <span class="string">&quot;object&quot;</span>, <span class="string">&quot;properties&quot;</span>: &#123;...&#125;&#125;    <span class="comment"># ✅</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Q7：Agent-结构化输出的结果在哪里？"><a href="#Q7：Agent-结构化输出的结果在哪里？" class="headerlink" title="Q7：Agent 结构化输出的结果在哪里？"></a>Q7：Agent 结构化输出的结果在哪里？</h3><p>返回字典中有两个关键字段：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line">result = agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: [...]&#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 1. 完整对话历史</span></span><br><span class="line">result[<span class="string">&quot;messages&quot;</span>]       <span class="comment"># 包含所有 HumanMessage / AIMessage / ToolMessage</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 2. 结构化输出结果</span></span><br><span class="line">result[<span class="string">&quot;structured_response&quot;</span>]    <span class="comment"># 最终的结构化对象</span></span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>Python</category>
+      </categories>
+      <tags>
+        <tag>Python</tag>
+        <tag>学习笔记</tag>
+        <tag>Pydantic</tag>
+        <tag>LangChain</tag>
+        <tag>DeepSeek</tag>
+        <tag>AI</tag>
+        <tag>大模型</tag>
+        <tag>Agent</tag>
+      </tags>
+  </entry>
 </search>
