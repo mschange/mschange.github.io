@@ -15192,4 +15192,570 @@
         <tag>基础语法</tag>
       </tags>
   </entry>
+  <entry>
+    <title>LangChain 15：Agent 流式输出完全指南</title>
+    <url>/posts/langchain-lesson15-agent-stream/</url>
+    <content><![CDATA[<h1 id="LangChain-15：Agent-流式输出完全指南"><a href="#LangChain-15：Agent-流式输出完全指南" class="headerlink" title="LangChain 15：Agent 流式输出完全指南"></a>LangChain 15：Agent 流式输出完全指南</h1><blockquote>
+<p><code>agent.stream()</code> 的六种 <code>stream_mode</code> 模式详解：values、updates、messages、tasks、debug、custom，从完整状态到逐 Token 输出，从任务监控到自定义数据流。<br>所有代码均可单独复制运行。</p>
+</blockquote>
+<hr>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li><a href="#%E7%8E%AF%E5%A2%83%E5%87%86%E5%A4%87">环境准备</a></li>
+<li><a href="#%E4%B8%80%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BA%E6%A6%82%E8%A7%88">一、流式输出概览</a><ul>
+<li><a href="#11-invoke-vs-stream">1.1 invoke vs stream</a></li>
+<li><a href="#12-stream_mode-%E5%85%AD%E7%A7%8D%E6%A8%A1%E5%BC%8F">1.2 stream_mode 六种模式</a></li>
+</ul>
+</li>
+<li><a href="#%E4%BA%8Cvalues-%E6%A8%A1%E5%BC%8F%E5%AE%8C%E6%95%B4%E7%8A%B6%E6%80%81%E8%BE%93%E5%87%BA">二、values 模式：完整状态输出</a><ul>
+<li><a href="#21-%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86">2.1 工作原理</a></li>
+<li><a href="#22-%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81">2.2 完整代码</a></li>
+<li><a href="#23-%E8%BE%93%E5%87%BA%E8%AF%A6%E8%A7%A3">2.3 输出详解</a></li>
+<li><a href="#24-%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF">2.4 适用场景</a></li>
+</ul>
+</li>
+<li><a href="#%E4%B8%89updates-%E6%A8%A1%E5%BC%8F%E5%A2%9E%E9%87%8F%E6%9B%B4%E6%96%B0%E8%BE%93%E5%87%BA">三、updates 模式：增量更新输出</a><ul>
+<li><a href="#31-%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86">3.1 工作原理</a></li>
+<li><a href="#32-%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81">3.2 完整代码</a></li>
+<li><a href="#33-%E8%BE%93%E5%87%BA%E8%AF%A6%E8%A7%A3">3.3 输出详解</a></li>
+<li><a href="#34-values-vs-updates-%E5%AF%B9%E6%AF%94">3.4 values vs updates 对比</a></li>
+</ul>
+</li>
+<li><a href="#%E5%9B%9Bmessages-%E6%A8%A1%E5%BC%8F%E6%B5%81%E5%BC%8F-token-%E8%BE%93%E5%87%BA">四、messages 模式：流式 Token 输出</a><ul>
+<li><a href="#41-%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86">4.1 工作原理</a></li>
+<li><a href="#42-%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81">4.2 完整代码</a></li>
+<li><a href="#43-%E8%BE%93%E5%87%BA%E8%AF%A6%E8%A7%A3">4.3 输出详解</a></li>
+<li><a href="#44-%E6%89%93%E5%AD%97%E6%9C%BA%E6%95%88%E6%9E%9C%E5%AE%9E%E7%8E%B0%E5%8E%9F%E7%90%86">4.4 打字机效果实现原理</a></li>
+</ul>
+</li>
+<li><a href="#%E4%BA%94tasks-%E6%A8%A1%E5%BC%8F%E4%BB%BB%E5%8A%A1%E7%94%9F%E5%91%BD%E5%91%A8%E6%9C%9F">五、tasks 模式：任务生命周期</a><ul>
+<li><a href="#51-%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86">5.1 工作原理</a></li>
+<li><a href="#52-%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81">5.2 完整代码</a></li>
+<li><a href="#53-%E8%BE%93%E5%87%BA%E8%AF%A6%E8%A7%A3">5.3 输出详解</a></li>
+<li><a href="#54-%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF">5.4 适用场景</a></li>
+</ul>
+</li>
+<li><a href="#%E5%85%ADdebug-%E6%A8%A1%E5%BC%8F%E8%AF%A6%E7%BB%86%E8%B0%83%E8%AF%95%E4%BF%A1%E6%81%AF">六、debug 模式：详细调试信息</a><ul>
+<li><a href="#61-%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86">6.1 工作原理</a></li>
+<li><a href="#62-%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81">6.2 完整代码</a></li>
+<li><a href="#63-%E8%BE%93%E5%87%BA%E8%AF%A6%E8%A7%A3">6.3 输出详解</a></li>
+<li><a href="#64-tasks-vs-debug-%E5%AF%B9%E6%AF%94">6.4 tasks vs debug 对比</a></li>
+</ul>
+</li>
+<li><a href="#%E4%B8%83custom-%E6%A8%A1%E5%BC%8F%E8%87%AA%E5%AE%9A%E4%B9%89%E6%95%B0%E6%8D%AE%E6%B5%81">七、custom 模式：自定义数据流</a><ul>
+<li><a href="#71-%E5%B7%A5%E4%BD%9C%E5%8E%9F%E7%90%86">7.1 工作原理</a></li>
+<li><a href="#72-%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81">7.2 完整代码</a></li>
+<li><a href="#73-%E8%BE%93%E5%87%BA%E8%AF%A6%E8%A7%A3">7.3 输出详解</a></li>
+<li><a href="#74-%E5%9C%A8%E5%B7%A5%E5%85%B7%E4%B8%AD%E4%BD%BF%E7%94%A8-get_stream_writer">7.4 在工具中使用 get_stream_writer</a></li>
+</ul>
+</li>
+<li><a href="#%E5%85%AB%E5%85%AD%E7%A7%8D%E6%A8%A1%E5%BC%8F%E5%85%A8%E9%9D%A2%E5%AF%B9%E6%AF%94">八、六种模式全面对比</a><ul>
+<li><a href="#81-%E5%AF%B9%E6%AF%94%E6%80%BB%E8%A1%A8">8.1 对比总表</a></li>
+<li><a href="#82-%E8%BE%93%E5%87%BA%E7%B2%92%E5%BA%A6%E5%AF%B9%E6%AF%94">8.2 输出粒度对比</a></li>
+<li><a href="#83-%E9%80%89%E6%8B%A9%E6%8C%87%E5%8D%97">8.3 选择指南</a></li>
+</ul>
+</li>
+<li><a href="#%E4%B9%9D%E5%A4%9A%E6%A8%A1%E5%BC%8F%E7%BB%84%E5%90%88%E4%BD%BF%E7%94%A8">九、多模式组合使用</a></li>
+<li><a href="#%E5%8D%81%E5%B8%B8%E8%A7%81%E9%97%AE%E9%A2%98">十、常见问题</a></li>
+</ul>
+<hr>
+<h2 id="环境准备"><a href="#环境准备" class="headerlink" title="环境准备"></a>环境准备</h2><h3 id="安装依赖"><a href="#安装依赖" class="headerlink" title="安装依赖"></a>安装依赖</h3><figure class="highlight bash"><table><tr><td class="code"><pre><span class="line">pip install langchain langchain-deepseek python-dotenv pydantic rich</span><br></pre></td></tr></table></figure>
+
+<h3 id="配置-env-文件"><a href="#配置-env-文件" class="headerlink" title="配置 .env 文件"></a>配置 .env 文件</h3><figure class="highlight ini"><table><tr><td class="code"><pre><span class="line"><span class="attr">OPENAI_API_KEY</span>=sk-你的密钥</span><br><span class="line"><span class="attr">OPENAI_BASE_URL</span>=https://api.deepseek.com/v1</span><br></pre></td></tr></table></figure>
+
+<h3 id="公共初始化代码"><a href="#公共初始化代码" class="headerlink" title="公共初始化代码"></a>公共初始化代码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="一、流式输出概览"><a href="#一、流式输出概览" class="headerlink" title="一、流式输出概览"></a>一、流式输出概览</h2><h3 id="1-1-invoke-vs-stream"><a href="#1-1-invoke-vs-stream" class="headerlink" title="1.1 invoke vs stream"></a>1.1 invoke vs stream</h3><p>Agent 提供两种调用方式：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                    invoke vs stream                                  │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                     │</span><br><span class="line">│  agent.invoke(&#123;&quot;messages&quot;: [...]&#125;)                                  │</span><br><span class="line">│  → 等待所有步骤执行完毕，一次性返回最终结果                           │</span><br><span class="line">│  → 返回值：dict                                                     │</span><br><span class="line">│                                                                     │</span><br><span class="line">│  agent.stream(&#123;&quot;messages&quot;: [...]&#125;, stream_mode=&quot;...&quot;)               │</span><br><span class="line">│  → 每个步骤执行后立即输出中间状态                                    │</span><br><span class="line">│  → 返回值：可迭代的 chunk 生成器                                     │</span><br><span class="line">│                                                                     │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>对比项</th>
+<th><code>invoke()</code></th>
+<th><code>stream()</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>返回方式</strong></td>
+<td>一次性返回最终结果</td>
+<td>逐步输出中间状态</td>
+</tr>
+<tr>
+<td><strong>返回类型</strong></td>
+<td><code>dict</code></td>
+<td>可迭代的 chunk 生成器</td>
+</tr>
+<tr>
+<td><strong>等待时间</strong></td>
+<td>需要等所有步骤完成</td>
+<td>每步完成即可看到输出</td>
+</tr>
+<tr>
+<td><strong>适用场景</strong></td>
+<td>只需要最终结果</td>
+<td>需要实时监控 &#x2F; 打字机效果 &#x2F; 调试</td>
+</tr>
+<tr>
+<td><strong>用户体验</strong></td>
+<td>等待后一次性展示</td>
+<td>实时渐进展示</td>
+</tr>
+</tbody></table>
+<p><strong>时序对比：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">invoke：</span><br><span class="line">  用户提问 ──→ [等待...等待...等待...] ──→ 最终结果</span><br><span class="line"></span><br><span class="line">stream：</span><br><span class="line">  用户提问 ──→ 步骤1结果 ──→ 步骤2结果 ──→ ... ──→ 最终结果</span><br><span class="line">                ↑ 立即可见     ↑ 立即可见</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-2-stream-mode-六种模式"><a href="#1-2-stream-mode-六种模式" class="headerlink" title="1.2 stream_mode 六种模式"></a>1.2 stream_mode 六种模式</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                agent.stream() 的六种 stream_mode                        │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                         │</span><br><span class="line">│  stream_mode =                                                          │</span><br><span class="line">│      │                                                                  │</span><br><span class="line">│      ├── &quot;values&quot;    ← 每步输出完整状态（适合状态持久化）               │</span><br><span class="line">│      │                                                                  │</span><br><span class="line">│      ├── &quot;updates&quot;   ← 每步只输出变化部分（默认，适合监控进度）         │</span><br><span class="line">│      │                                                                  │</span><br><span class="line">│      ├── &quot;messages&quot;  ← 流式输出 Token（适合打字机效果）                 │</span><br><span class="line">│      │                                                                  │</span><br><span class="line">│      ├── &quot;tasks&quot;     ← 任务开始/结束事件（适合监控任务生命周期）         │</span><br><span class="line">│      │                                                                  │</span><br><span class="line">│      ├── &quot;debug&quot;     ← 比 tasks 更详细（适合调试）                      │</span><br><span class="line">│      │                                                                  │</span><br><span class="line">│      └── &quot;custom&quot;    ← 开发者自定义数据（适合业务逻辑进度）             │</span><br><span class="line">│                                                                         │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="二、values-模式：完整状态输出"><a href="#二、values-模式：完整状态输出" class="headerlink" title="二、values 模式：完整状态输出"></a>二、values 模式：完整状态输出</h2><h3 id="2-1-工作原理"><a href="#2-1-工作原理" class="headerlink" title="2.1 工作原理"></a>2.1 工作原理</h3><p><code>stream_mode=&quot;values&quot;</code> 模式下，<strong>每个步骤执行后，都会输出完整的状态信息</strong>。</p>
+<p>状态是<strong>累加</strong>的——每一步的输出都包含从头到尾的所有消息。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">步骤1 输出：[msg1]</span><br><span class="line">步骤2 输出：[msg1, msg2]</span><br><span class="line">步骤3 输出：[msg1, msg2, msg3]</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-2-完整代码"><a href="#2-2-完整代码" class="headerlink" title="2.2 完整代码"></a>2.2 完整代码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Union</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ToolStrategy</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> rich <span class="keyword">import</span> <span class="built_in">print</span> <span class="keyword">as</span> rprint</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ContactInfo</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;用户的联系方式&quot;&quot;&quot;</span></span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;用户姓名&quot;</span>)</span><br><span class="line">    email: <span class="built_in">str</span> = Field(description=<span class="string">&quot;用户邮箱地址&quot;</span>)</span><br><span class="line">    phone: <span class="built_in">str</span> = Field(description=<span class="string">&quot;用户的手机号&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">EventInfo</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;事件详情&quot;&quot;&quot;</span></span><br><span class="line">    event_name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;事件名称&quot;</span>)</span><br><span class="line">    date: <span class="built_in">str</span> = Field(description=<span class="string">&quot;事件发生日期&quot;</span>)</span><br><span class="line"></span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=ToolStrategy(</span><br><span class="line">        schema=<span class="type">Union</span>[ContactInfo, EventInfo],</span><br><span class="line">        tool_message_content=<span class="string">&quot;已成功抽取信息&quot;</span>,</span><br><span class="line">    )</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># agent 流式输出</span></span><br><span class="line"><span class="comment"># values 模式：每个步骤执行后，都会输出完整的状态信息</span></span><br><span class="line"><span class="comment"># 适用于每一步都要获取完整状态、状态持久化场景</span></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">            &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;从以下信息中提取用户信息，小明的邮箱是sdfsdfas@test.com,电话是13000000000&quot;</span>&#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;values&quot;</span></span><br><span class="line">):</span><br><span class="line">    rprint(chunk)</span><br><span class="line">    rprint(<span class="string">&quot;-&quot;</span> * <span class="number">50</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-3-输出详解"><a href="#2-3-输出详解" class="headerlink" title="2.3 输出详解"></a>2.3 输出详解</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">第 1 次 chunk：初始状态（只有 HumanMessage）</span><br><span class="line">&#123;</span><br><span class="line">    &#x27;messages&#x27;: [</span><br><span class="line">        HumanMessage(content=&#x27;从以下信息中提取用户信息...&#x27;)</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line">第 2 次 chunk：模型决策后（HumanMessage + AIMessage with tool_calls）</span><br><span class="line">&#123;</span><br><span class="line">    &#x27;messages&#x27;: [</span><br><span class="line">        HumanMessage(content=&#x27;从以下信息中提取用户信息...&#x27;),</span><br><span class="line">        AIMessage(content=&#x27;&#x27;, tool_calls=[</span><br><span class="line">            &#123;&#x27;name&#x27;: &#x27;ContactInfo&#x27;, &#x27;args&#x27;: &#123;&#x27;name&#x27;: &#x27;小明&#x27;, ...&#125;&#125;</span><br><span class="line">        ])</span><br><span class="line">    ]</span><br><span class="line">&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line">第 3 次 chunk：工具执行后（所有消息 + structured_response）</span><br><span class="line">&#123;</span><br><span class="line">    &#x27;messages&#x27;: [</span><br><span class="line">        HumanMessage(content=&#x27;...&#x27;),</span><br><span class="line">        AIMessage(tool_calls=[...]),</span><br><span class="line">        ToolMessage(content=&#x27;已成功抽取信息&#x27;)</span><br><span class="line">    ],</span><br><span class="line">    &#x27;structured_response&#x27;: ContactInfo(name=&#x27;小明&#x27;, ...)</span><br><span class="line">&#125;</span><br><span class="line">--------------------------------------------------</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键特点：</strong></p>
+<ul>
+<li>每次 chunk 都包含<strong>从头到尾的所有消息</strong></li>
+<li>数据量<strong>逐渐增大</strong>（因为消息在累加）</li>
+<li>最后一个 chunk 包含<strong>完整的最终状态</strong>，等价于 <code>invoke()</code> 的返回值</li>
+</ul>
+<h3 id="2-4-适用场景"><a href="#2-4-适用场景" class="headerlink" title="2.4 适用场景"></a>2.4 适用场景</h3><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>状态持久化</strong></td>
+<td>每步都需要保存完整状态到数据库</td>
+</tr>
+<tr>
+<td><strong>断点恢复</strong></td>
+<td>需要从任意步骤恢复执行</td>
+</tr>
+<tr>
+<td><strong>完整审计</strong></td>
+<td>需要记录每一步的完整对话历史</td>
+</tr>
+<tr>
+<td><strong>简单场景</strong></td>
+<td>不关心增量变化，只关心每步的完整快照</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="三、updates-模式：增量更新输出"><a href="#三、updates-模式：增量更新输出" class="headerlink" title="三、updates 模式：增量更新输出"></a>三、updates 模式：增量更新输出</h2><h3 id="3-1-工作原理"><a href="#3-1-工作原理" class="headerlink" title="3.1 工作原理"></a>3.1 工作原理</h3><p><code>stream_mode=&quot;updates&quot;</code> 是<strong>默认模式</strong>。每个步骤执行后，<strong>只增量更新状态中发生变化的内容</strong>。</p>
+<p>输出以<strong>节点名称</strong>为 key，值为该节点产生的变化。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">步骤1 输出：&#123;agent: [新消息]&#125;</span><br><span class="line">步骤2 输出：&#123;tools: [新消息]&#125;</span><br><span class="line">步骤3 输出：&#123;agent: [新消息]&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-2-完整代码"><a href="#3-2-完整代码" class="headerlink" title="3.2 完整代码"></a>3.2 完整代码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Union</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ToolStrategy</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> rich <span class="keyword">import</span> <span class="built_in">print</span> <span class="keyword">as</span> rprint</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">ContactInfo</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;用户的联系方式&quot;&quot;&quot;</span></span><br><span class="line">    name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;用户姓名&quot;</span>)</span><br><span class="line">    email: <span class="built_in">str</span> = Field(description=<span class="string">&quot;用户邮箱地址&quot;</span>)</span><br><span class="line">    phone: <span class="built_in">str</span> = Field(description=<span class="string">&quot;用户的手机号&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">EventInfo</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;事件详情&quot;&quot;&quot;</span></span><br><span class="line">    event_name: <span class="built_in">str</span> = Field(description=<span class="string">&quot;事件名称&quot;</span>)</span><br><span class="line">    date: <span class="built_in">str</span> = Field(description=<span class="string">&quot;事件发生日期&quot;</span>)</span><br><span class="line"></span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    response_format=ToolStrategy(</span><br><span class="line">        schema=<span class="type">Union</span>[ContactInfo, EventInfo],</span><br><span class="line">        tool_message_content=<span class="string">&quot;已成功抽取信息&quot;</span>,</span><br><span class="line">    )</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># updates 模式（默认模式）</span></span><br><span class="line"><span class="comment"># 每个步骤执行后，只增量更新状态中发生变化的内容</span></span><br><span class="line"><span class="comment"># 用于监控 Agent 执行进度，例如观察 Agent 决定调用工具、工具执行结果等步骤</span></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">            &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;从以下信息中提取用户信息，小明的邮箱是sdfsdfas@test.com,电话是13000000000&quot;</span>&#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;updates&quot;</span></span><br><span class="line">):</span><br><span class="line">    rprint(chunk)</span><br><span class="line">    rprint(<span class="string">&quot;-&quot;</span> * <span class="number">50</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="3-3-输出详解"><a href="#3-3-输出详解" class="headerlink" title="3.3 输出详解"></a>3.3 输出详解</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">第 1 次 chunk：agent 节点的输出（模型决策）</span><br><span class="line">&#123;</span><br><span class="line">    &#x27;agent&#x27;: &#123;</span><br><span class="line">        &#x27;messages&#x27;: [</span><br><span class="line">            AIMessage(content=&#x27;&#x27;, tool_calls=[</span><br><span class="line">                &#123;&#x27;name&#x27;: &#x27;ContactInfo&#x27;, &#x27;args&#x27;: &#123;&#x27;name&#x27;: &#x27;小明&#x27;, ...&#125;&#125;</span><br><span class="line">            ])</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line">第 2 次 chunk：tools 节点的输出（工具执行结果）</span><br><span class="line">&#123;</span><br><span class="line">    &#x27;tools&#x27;: &#123;</span><br><span class="line">        &#x27;messages&#x27;: [</span><br><span class="line">            ToolMessage(content=&#x27;已成功抽取信息&#x27;, name=&#x27;ContactInfo&#x27;)</span><br><span class="line">        ]</span><br><span class="line">    &#125;</span><br><span class="line">&#125;</span><br><span class="line">--------------------------------------------------</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键特点：</strong></p>
+<ul>
+<li>每次只输出<strong>当前步骤新增的内容</strong></li>
+<li>以<strong>节点名称</strong>（agent &#x2F; tools）为 key</li>
+<li>数据量<strong>恒定</strong>（不包含历史消息）</li>
+<li>更节省带宽和内存</li>
+</ul>
+<h3 id="3-4-values-vs-updates-对比"><a href="#3-4-values-vs-updates-对比" class="headerlink" title="3.4 values vs updates 对比"></a>3.4 values vs updates 对比</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                    values vs updates 输出对比                            │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                         │</span><br><span class="line">│  values 模式（完整状态）         updates 模式（增量更新）                 │</span><br><span class="line">│                                                                         │</span><br><span class="line">│  chunk 1:                       chunk 1:                                │</span><br><span class="line">│  &#123;                              &#123;&#x27;agent&#x27;: &#123;                             │</span><br><span class="line">│    &#x27;messages&#x27;: [                  &#x27;messages&#x27;: [AIMessage(...)]           │</span><br><span class="line">│      HumanMessage(...)           &#125;                                      │</span><br><span class="line">│    ]                                                                    │</span><br><span class="line">│  &#125;                              chunk 2:                                │</span><br><span class="line">│                                 &#123;&#x27;tools&#x27;: &#123;                             │</span><br><span class="line">│  chunk 2:                         &#x27;messages&#x27;: [ToolMessage(...)]        │</span><br><span class="line">│  &#123;                              &#125;                                       │</span><br><span class="line">│    &#x27;messages&#x27;: [                                                         │</span><br><span class="line">│      HumanMessage(...),         特点：                                   │</span><br><span class="line">│      AIMessage(...)               - 只有新增内容                         │</span><br><span class="line">│    ]                              - 以节点名为 key                       │</span><br><span class="line">│  &#125;                                - 数据量恒定                           │</span><br><span class="line">│                                                                         │</span><br><span class="line">│  chunk 3:                                                               │</span><br><span class="line">│  &#123;                                                                      │</span><br><span class="line">│    &#x27;messages&#x27;: [                                                         │</span><br><span class="line">│      HumanMessage(...),                                                 │</span><br><span class="line">│      AIMessage(...),                                                    │</span><br><span class="line">│      ToolMessage(...)                                                   │</span><br><span class="line">│    ],                                                                   │</span><br><span class="line">│    &#x27;structured_response&#x27;: ...                                           │</span><br><span class="line">│  &#125;                                                                      │</span><br><span class="line">│                                                                         │</span><br><span class="line">│  特点：                                                                 │</span><br><span class="line">│    - 包含所有历史消息                                                     │</span><br><span class="line">│    - 数据量逐渐增大                                                       │</span><br><span class="line">│    - 最后一个 chunk = invoke() 返回值                                    │</span><br><span class="line">│                                                                         │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>对比项</th>
+<th>values</th>
+<th>updates</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>数据量</td>
+<td>逐渐增大</td>
+<td>恒定</td>
+</tr>
+<tr>
+<td>包含历史</td>
+<td>是</td>
+<td>否</td>
+</tr>
+<tr>
+<td>节点信息</td>
+<td>无</td>
+<td>有（agent &#x2F; tools）</td>
+</tr>
+<tr>
+<td>带宽消耗</td>
+<td>高</td>
+<td>低</td>
+</tr>
+<tr>
+<td>适合持久化</td>
+<td>是</td>
+<td>否</td>
+</tr>
+<tr>
+<td>适合监控进度</td>
+<td>可以</td>
+<td>最适合</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="四、messages-模式：流式-Token-输出"><a href="#四、messages-模式：流式-Token-输出" class="headerlink" title="四、messages 模式：流式 Token 输出"></a>四、messages 模式：流式 Token 输出</h2><h3 id="4-1-工作原理"><a href="#4-1-工作原理" class="headerlink" title="4.1 工作原理"></a>4.1 工作原理</h3><p><code>stream_mode=&quot;messages&quot;</code> 模式输出<strong>流式返回的 Token 以及相关元数据</strong>（如来自哪个节点）。</p>
+<p>这是<strong>粒度最细</strong>的模式——不是按步骤输出，而是按<strong>每个 Token</strong> 输出。</p>
+<p>可以用在实现类似 ChatGPT 的<strong>打字机效果</strong>场景，为聊天机器人等交互式应用提供最佳的实时体验。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">chunk: (AIMessageChunk(content=&quot;我&quot;), metadata)</span><br><span class="line">chunk: (AIMessageChunk(content=&quot;来&quot;), metadata)</span><br><span class="line">chunk: (AIMessageChunk(content=&quot;帮&quot;), metadata)</span><br><span class="line">chunk: (AIMessageChunk(content=&quot;你&quot;), metadata)</span><br><span class="line">...</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-2-完整代码"><a href="#4-2-完整代码" class="headerlink" title="4.2 完整代码"></a>4.2 完整代码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Literal</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ToolStrategy</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> SystemMessage</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义工具</span></span><br><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search_customer_database</span>(<span class="params">query: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    在客户数据库中搜索信息</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        query (str): 客户查询字符串，例如 &quot;张三&quot; 或 &quot;李四&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 客户记录字符串，包含客户姓名、等级、最近购买日期和累计消费</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;张三&quot;</span> <span class="keyword">in</span> query.lower():</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;客户记录：张三，VIP客户，最近购买日期：2026-01-15，累计消费：$15,000&quot;</span></span><br><span class="line">    <span class="keyword">elif</span> <span class="string">&quot;李四&quot;</span> <span class="keyword">in</span> query.lower():</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;客户记录：李四，普通客户，最近购买日期：2025-12-20，累计消费：$3,200&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">send_email</span>(<span class="params">customer: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    发送感谢邮件</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        customer (str): 客户名称，例如 &quot;张三&quot; 或 &quot;李四&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 确认消息，包含已发送的客户名称</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;已向 <span class="subst">&#123;customer&#125;</span> 发送感谢邮件&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 定义 Pydantic Schema</span></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomerAnalysis</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;客户分析报告&quot;&quot;&quot;</span></span><br><span class="line">    customer_name: <span class="built_in">str</span> = Field(<span class="literal">None</span>, description=<span class="string">&quot;客户姓名&quot;</span>)</span><br><span class="line">    customer_tier: <span class="type">Literal</span>[<span class="string">&quot;潜在客户&quot;</span>, <span class="string">&quot;普通客户&quot;</span>, <span class="string">&quot;VIP客户&quot;</span>, <span class="string">&quot;流失风险&quot;</span>] = Field(</span><br><span class="line">        <span class="string">&quot;潜在客户&quot;</span>, description=<span class="string">&quot;客户等级，只能是潜在客户、普通客户、VIP客户或流失风险&quot;</span></span><br><span class="line">    )</span><br><span class="line">    recent_activity: <span class="built_in">str</span> = Field(<span class="literal">None</span>, description=<span class="string">&quot;最近活动&quot;</span>)</span><br><span class="line">    spending_level: <span class="type">Literal</span>[<span class="string">&quot;低&quot;</span>, <span class="string">&quot;中&quot;</span>, <span class="string">&quot;高&quot;</span>] = Field(<span class="literal">None</span>, description=<span class="string">&quot;消费水平&quot;</span>)</span><br><span class="line">    send_email: <span class="built_in">bool</span> = Field(<span class="literal">False</span>, description=<span class="string">&quot;是否已发送感谢邮件&quot;</span>)</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    system_prompt=SystemMessage(content=<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">        请分析指定客户的情况：</span></span><br><span class="line"><span class="string">        1. 先搜索客户数据库了解最新情况</span></span><br><span class="line"><span class="string">        2. 如果是VIP客户，则发送感谢邮件</span></span><br><span class="line"><span class="string">        3. 基于搜索结果生成结构化分析报告</span></span><br><span class="line"><span class="string">        4. 如果找不到客户信息，则返回空对象，不发送感谢邮件</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span>),</span><br><span class="line">    tools=[search_customer_database, send_email],</span><br><span class="line">    response_format=ToolStrategy(CustomerAnalysis)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># messages 模式：流式输出 Token</span></span><br><span class="line"><span class="comment"># 该模式会输出流式返回的 Token 以及相关元数据（如来自哪个节点）</span></span><br><span class="line"><span class="comment"># 可以用在实现类似 ChatGPT 的打字机效果场景</span></span><br><span class="line"><span class="comment"># 为聊天机器人等交互式应用提供最佳的实时体验</span></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">            &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请分析客户张三&quot;</span>&#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;messages&quot;</span></span><br><span class="line">):</span><br><span class="line">    <span class="comment"># chunk 是一个元组：(消息对象, 元数据)</span></span><br><span class="line">    <span class="comment"># chunk[0] 是消息对象（AIMessageChunk）</span></span><br><span class="line">    <span class="comment"># chunk[0].content 是本次输出的 token 文本</span></span><br><span class="line">    <span class="comment"># end=&quot;&quot; 表示不换行</span></span><br><span class="line">    <span class="comment"># flush=True 表示立即刷新到终端，实现实时输出</span></span><br><span class="line">    <span class="built_in">print</span>(chunk[<span class="number">0</span>].content, end=<span class="string">&quot;&quot;</span>, flush=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="4-3-输出详解"><a href="#4-3-输出详解" class="headerlink" title="4.3 输出详解"></a>4.3 输出详解</h3><p>终端输出效果（逐字打印）：</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">我来帮你分析客户张三的情况。</span><br><span class="line"></span><br><span class="line">首先，让我搜索客户数据库...</span><br><span class="line"></span><br><span class="line">根据搜索结果，张三是一位VIP客户，累计消费$15,000。</span><br><span class="line">作为VIP客户，我将为他发送感谢邮件。</span><br><span class="line"></span><br><span class="line">已发送感谢邮件。</span><br><span class="line"></span><br><span class="line">以下是张三的客户分析报告：</span><br><span class="line">- 客户姓名：张三</span><br><span class="line">- 客户等级：VIP客户</span><br><span class="line">- 最近活动：最近购买日期 2026-01-15</span><br><span class="line">- 消费水平：高</span><br><span class="line">- 已发送感谢邮件：是</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键特点：</strong></p>
+<ul>
+<li>逐 Token 输出，实现<strong>打字机效果</strong></li>
+<li>每个 chunk 是 <code>(消息对象, 元数据)</code> 元组</li>
+<li><code>chunk[0].content</code> 是本次的 token 文本（可能只是一个字或几个字）</li>
+<li>粒度最细，实时性最强</li>
+</ul>
+<h3 id="4-4-打字机效果实现原理"><a href="#4-4-打字机效果实现原理" class="headerlink" title="4.4 打字机效果实现原理"></a>4.4 打字机效果实现原理</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(&#123;<span class="string">&quot;messages&quot;</span>: [...]&#125;, stream_mode=<span class="string">&quot;messages&quot;</span>):</span><br><span class="line">    <span class="built_in">print</span>(chunk[<span class="number">0</span>].content, end=<span class="string">&quot;&quot;</span>, flush=<span class="literal">True</span>)</span><br><span class="line">    <span class="comment">#     ────────────────  ────  ──────────</span></span><br><span class="line">    <span class="comment">#     本次 token 文本    不换行  立即刷新</span></span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>参数</th>
+<th>作用</th>
+<th>为什么需要</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>end=&quot;&quot;</code></td>
+<td>不添加换行符</td>
+<td>默认 <code>print()</code> 会在末尾加 <code>\n</code>，导致每个 token 独占一行</td>
+</tr>
+<tr>
+<td><code>flush=True</code></td>
+<td>立即刷新输出缓冲区</td>
+<td>否则 Python 会缓冲输出，无法实现实时逐字显示</td>
+</tr>
+</tbody></table>
+<p><strong>前端集成场景：</strong></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                    messages 模式 + WebSocket/SSE                     │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                     │</span><br><span class="line">│  后端：                          前端：                              │</span><br><span class="line">│  for chunk in stream:              收到 token → 追加到页面           │</span><br><span class="line">│      token = chunk[0].content      实现打字机效果                    │</span><br><span class="line">│      websocket.send(token)                                          │</span><br><span class="line">│                                                                     │</span><br><span class="line">│  效果：用户看到文字逐字出现，类似 ChatGPT                             │</span><br><span class="line">│                                                                     │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="五、tasks-模式：任务生命周期"><a href="#五、tasks-模式：任务生命周期" class="headerlink" title="五、tasks 模式：任务生命周期"></a>五、tasks 模式：任务生命周期</h2><h3 id="5-1-工作原理"><a href="#5-1-工作原理" class="headerlink" title="5.1 工作原理"></a>5.1 工作原理</h3><p><code>stream_mode=&quot;tasks&quot;</code> 模式输出当前 <strong>task 任务开始和结束的时间</strong>，包含任务的结果和错误信息。</p>
+<p>用于<strong>监控任务的生命周期</strong>——每个工具调用被视为一个 task，可以看到它的 start 和 end 事件。</p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">task &quot;search_customer_database&quot; → start</span><br><span class="line">task &quot;search_customer_database&quot; → end (result: ...)</span><br><span class="line">task &quot;send_email&quot; → start</span><br><span class="line">task &quot;send_email&quot; → end (result: ...)</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-2-完整代码"><a href="#5-2-完整代码" class="headerlink" title="5.2 完整代码"></a>5.2 完整代码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> pydantic <span class="keyword">import</span> BaseModel, Field</span><br><span class="line"><span class="keyword">from</span> typing <span class="keyword">import</span> <span class="type">Literal</span></span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.agents.structured_output <span class="keyword">import</span> ToolStrategy</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> SystemMessage</span><br><span class="line"><span class="keyword">from</span> rich <span class="keyword">import</span> <span class="built_in">print</span> <span class="keyword">as</span> rprint</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search_customer_database</span>(<span class="params">query: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    在客户数据库中搜索信息</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        query (str): 客户查询字符串</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 客户记录字符串</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">if</span> <span class="string">&quot;张三&quot;</span> <span class="keyword">in</span> query.lower():</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;客户记录：张三，VIP客户，最近购买日期：2026-01-15，累计消费：$15,000&quot;</span></span><br><span class="line">    <span class="keyword">elif</span> <span class="string">&quot;李四&quot;</span> <span class="keyword">in</span> query.lower():</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;客户记录：李四，普通客户，最近购买日期：2025-12-20，累计消费：$3,200&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">send_email</span>(<span class="params">customer: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    发送感谢邮件</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        customer (str): 客户名称</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 确认消息</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;已向 <span class="subst">&#123;customer&#125;</span> 发送感谢邮件&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">CustomerAnalysis</span>(<span class="title class_ inherited__">BaseModel</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;客户分析报告&quot;&quot;&quot;</span></span><br><span class="line">    customer_name: <span class="built_in">str</span> = Field(<span class="literal">None</span>, description=<span class="string">&quot;客户姓名&quot;</span>)</span><br><span class="line">    customer_tier: <span class="type">Literal</span>[<span class="string">&quot;潜在客户&quot;</span>, <span class="string">&quot;普通客户&quot;</span>, <span class="string">&quot;VIP客户&quot;</span>, <span class="string">&quot;流失风险&quot;</span>] = Field(</span><br><span class="line">        <span class="string">&quot;潜在客户&quot;</span>, description=<span class="string">&quot;客户等级&quot;</span></span><br><span class="line">    )</span><br><span class="line">    recent_activity: <span class="built_in">str</span> = Field(<span class="literal">None</span>, description=<span class="string">&quot;最近活动&quot;</span>)</span><br><span class="line">    spending_level: <span class="type">Literal</span>[<span class="string">&quot;低&quot;</span>, <span class="string">&quot;中&quot;</span>, <span class="string">&quot;高&quot;</span>] = Field(<span class="literal">None</span>, description=<span class="string">&quot;消费水平&quot;</span>)</span><br><span class="line">    send_email: <span class="built_in">bool</span> = Field(<span class="literal">False</span>, description=<span class="string">&quot;是否已发送感谢邮件&quot;</span>)</span><br><span class="line"></span><br><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    system_prompt=SystemMessage(content=<span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">        请分析指定客户的情况：</span></span><br><span class="line"><span class="string">        1. 先搜索客户数据库了解最新情况</span></span><br><span class="line"><span class="string">        2. 如果是VIP客户，则发送感谢邮件</span></span><br><span class="line"><span class="string">        3. 基于搜索结果生成结构化分析报告</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span>),</span><br><span class="line">    tools=[search_customer_database, send_email],</span><br><span class="line">    response_format=ToolStrategy(CustomerAnalysis)</span><br><span class="line">)</span><br><span class="line"></span><br><span class="line"><span class="comment"># tasks 模式：输出任务开始和结束的时间</span></span><br><span class="line"><span class="comment"># 包含任务的结果和错误信息</span></span><br><span class="line"><span class="comment"># 用于监控任务的生命周期</span></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">            &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请分析客户张三&quot;</span>&#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;tasks&quot;</span></span><br><span class="line">):</span><br><span class="line">    rprint(chunk)</span><br><span class="line">    rprint(<span class="string">&quot;-&quot;</span> * <span class="number">50</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-3-输出详解"><a href="#5-3-输出详解" class="headerlink" title="5.3 输出详解"></a>5.3 输出详解</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">第 1 次 chunk：search_customer_database 任务开始</span><br><span class="line">&#123;</span><br><span class="line">    &#x27;task_id&#x27;: &#x27;xxx-xxx&#x27;,</span><br><span class="line">    &#x27;name&#x27;: &#x27;search_customer_database&#x27;,</span><br><span class="line">    &#x27;event&#x27;: &#x27;start&#x27;,</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line">第 2 次 chunk：search_customer_database 任务结束</span><br><span class="line">&#123;</span><br><span class="line">    &#x27;task_id&#x27;: &#x27;xxx-xxx&#x27;,</span><br><span class="line">    &#x27;name&#x27;: &#x27;search_customer_database&#x27;,</span><br><span class="line">    &#x27;event&#x27;: &#x27;end&#x27;,</span><br><span class="line">    &#x27;result&#x27;: &#x27;客户记录：张三，VIP客户...&#x27;,</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line">第 3 次 chunk：send_email 任务开始</span><br><span class="line">&#123;</span><br><span class="line">    &#x27;task_id&#x27;: &#x27;yyy-yyy&#x27;,</span><br><span class="line">    &#x27;name&#x27;: &#x27;send_email&#x27;,</span><br><span class="line">    &#x27;event&#x27;: &#x27;start&#x27;,</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line">第 4 次 chunk：send_email 任务结束</span><br><span class="line">&#123;</span><br><span class="line">    &#x27;task_id&#x27;: &#x27;yyy-yyy&#x27;,</span><br><span class="line">    &#x27;name&#x27;: &#x27;send_email&#x27;,</span><br><span class="line">    &#x27;event&#x27;: &#x27;end&#x27;,</span><br><span class="line">    &#x27;result&#x27;: &#x27;已向 张三 发送感谢邮件&#x27;,</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line">--------------------------------------------------</span><br></pre></td></tr></table></figure>
+
+<h3 id="5-4-适用场景"><a href="#5-4-适用场景" class="headerlink" title="5.4 适用场景"></a>5.4 适用场景</h3><table>
+<thead>
+<tr>
+<th>场景</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>工具调用监控</strong></td>
+<td>观察每个工具的调用耗时和结果</td>
+</tr>
+<tr>
+<td><strong>性能分析</strong></td>
+<td>统计各工具的执行时间</td>
+</tr>
+<tr>
+<td><strong>错误追踪</strong></td>
+<td>通过 end 事件中的错误信息定位问题</td>
+</tr>
+<tr>
+<td><strong>生产监控</strong></td>
+<td>在仪表盘中展示工具调用状态</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="六、debug-模式：详细调试信息"><a href="#六、debug-模式：详细调试信息" class="headerlink" title="六、debug 模式：详细调试信息"></a>六、debug 模式：详细调试信息</h2><h3 id="6-1-工作原理"><a href="#6-1-工作原理" class="headerlink" title="6.1 工作原理"></a>6.1 工作原理</h3><p><code>stream_mode=&quot;debug&quot;</code> 模式与 tasks 模式类似，但<strong>比 tasks 模式多输出任务步骤、时间戳、task 类型</strong>（task &#x2F; task_result）。</p>
+<p>用于<strong>调试、监控 task 任务的生命周期</strong>。</p>
+<h3 id="6-2-完整代码"><a href="#6-2-完整代码" class="headerlink" title="6.2 完整代码"></a>6.2 完整代码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># （前面的工具定义和 Agent 创建同 tasks 模式）</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># debug 模式：与 tasks 模式类似</span></span><br><span class="line"><span class="comment"># 比 tasks 模式多输出任务步骤、时间戳、task 类型（task/task_result）</span></span><br><span class="line"><span class="comment"># 用于调试、监控 task 任务的生命周期</span></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">            &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请分析客户张三&quot;</span>&#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;debug&quot;</span></span><br><span class="line">):</span><br><span class="line">    rprint(chunk)</span><br><span class="line">    rprint(<span class="string">&quot;-&quot;</span> * <span class="number">50</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-3-输出详解"><a href="#6-3-输出详解" class="headerlink" title="6.3 输出详解"></a>6.3 输出详解</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">&#123;</span><br><span class="line">    &#x27;task_id&#x27;: &#x27;xxx-xxx&#x27;,</span><br><span class="line">    &#x27;name&#x27;: &#x27;search_customer_database&#x27;,</span><br><span class="line">    &#x27;event&#x27;: &#x27;start&#x27;,</span><br><span class="line">    &#x27;type&#x27;: &#x27;task&#x27;,              ← 额外的 type 字段</span><br><span class="line">    &#x27;timestamp&#x27;: &#x27;2026-...&#x27;,     ← 额外的时间戳</span><br><span class="line">    &#x27;step&#x27;: 1,                   ← 额外的步骤编号</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line">--------------------------------------------------</span><br><span class="line">&#123;</span><br><span class="line">    &#x27;task_id&#x27;: &#x27;xxx-xxx&#x27;,</span><br><span class="line">    &#x27;name&#x27;: &#x27;search_customer_database&#x27;,</span><br><span class="line">    &#x27;event&#x27;: &#x27;end&#x27;,</span><br><span class="line">    &#x27;type&#x27;: &#x27;task_result&#x27;,       ← task_result 类型</span><br><span class="line">    &#x27;timestamp&#x27;: &#x27;2026-...&#x27;,</span><br><span class="line">    &#x27;step&#x27;: 1,</span><br><span class="line">    &#x27;result&#x27;: &#x27;客户记录：张三...&#x27;,</span><br><span class="line">    ...</span><br><span class="line">&#125;</span><br><span class="line">--------------------------------------------------</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-4-tasks-vs-debug-对比"><a href="#6-4-tasks-vs-debug-对比" class="headerlink" title="6.4 tasks vs debug 对比"></a>6.4 tasks vs debug 对比</h3><table>
+<thead>
+<tr>
+<th>对比项</th>
+<th>tasks</th>
+<th>debug</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>任务开始&#x2F;结束事件</td>
+<td>有</td>
+<td>有</td>
+</tr>
+<tr>
+<td>时间戳</td>
+<td>无</td>
+<td>有</td>
+</tr>
+<tr>
+<td>task 类型</td>
+<td>无</td>
+<td>有（<code>task</code> &#x2F; <code>task_result</code>）</td>
+</tr>
+<tr>
+<td>步骤编号</td>
+<td>无</td>
+<td>有</td>
+</tr>
+<tr>
+<td>数据量</td>
+<td>较少</td>
+<td>较多</td>
+</tr>
+<tr>
+<td>性能开销</td>
+<td>低</td>
+<td>较高</td>
+</tr>
+<tr>
+<td><strong>适用场景</strong></td>
+<td>生产环境监控</td>
+<td>开发阶段调试</td>
+</tr>
+</tbody></table>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                    tasks vs debug 输出对比                           │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                     │</span><br><span class="line">│  tasks 模式：                    debug 模式：                        │</span><br><span class="line">│                                                                     │</span><br><span class="line">│  &#123;                              &#123;                                   │</span><br><span class="line">│    &#x27;task_id&#x27;: &#x27;xxx&#x27;,              &#x27;task_id&#x27;: &#x27;xxx&#x27;,                 │</span><br><span class="line">│    &#x27;name&#x27;: &#x27;search_...&#x27;,          &#x27;name&#x27;: &#x27;search_...&#x27;,             │</span><br><span class="line">│    &#x27;event&#x27;: &#x27;start&#x27;,              &#x27;event&#x27;: &#x27;start&#x27;,                 │</span><br><span class="line">│    ...                              &#x27;type&#x27;: &#x27;task&#x27;,       ← 新增    │</span><br><span class="line">│  &#125;                                  &#x27;timestamp&#x27;: &#x27;...&#x27;,   ← 新增    │</span><br><span class="line">│                                       &#x27;step&#x27;: 1,          ← 新增    │</span><br><span class="line">│                                       ...                             │</span><br><span class="line">│                                     &#125;                                 │</span><br><span class="line">│                                                                     │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="七、custom-模式：自定义数据流"><a href="#七、custom-模式：自定义数据流" class="headerlink" title="七、custom 模式：自定义数据流"></a>七、custom 模式：自定义数据流</h2><h3 id="7-1-工作原理"><a href="#7-1-工作原理" class="headerlink" title="7.1 工作原理"></a>7.1 工作原理</h3><p><code>stream_mode=&quot;custom&quot;</code> 模式允许开发者通过 <code>get_stream_writer</code> 在工具或节点内部<strong>自定义发送的数据</strong>。</p>
+<p>用于输出业务逻辑相关的进度信息（如”已处理10&#x2F;100条记录”）、自定义日志或指标。</p>
+<p><strong>核心要点</strong>：custom 模式<strong>不会自动输出任何内容</strong>，只有当开发者在工具内部主动调用 <code>writer()</code> 时才会产生输出。</p>
+<h3 id="7-2-完整代码"><a href="#7-2-完整代码" class="headerlink" title="7.2 完整代码"></a>7.2 完整代码</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># （前面的工具定义和 Agent 创建同 tasks 模式）</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># custom 模式：开发者通过 get_stream_writer 在工具或节点内部自定义发送的数据</span></span><br><span class="line"><span class="comment"># 用于输出业务逻辑相关的进度信息（如&quot;已处理10/100条记录&quot;）</span></span><br><span class="line"><span class="comment"># 自定义日志或指标</span></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(</span><br><span class="line">    &#123;</span><br><span class="line">        <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">            &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;请分析客户张三&quot;</span>&#125;</span><br><span class="line">        ]</span><br><span class="line">    &#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;custom&quot;</span></span><br><span class="line">):</span><br><span class="line">    rprint(chunk)</span><br><span class="line">    rprint(<span class="string">&quot;-&quot;</span> * <span class="number">50</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="7-3-输出详解"><a href="#7-3-输出详解" class="headerlink" title="7.3 输出详解"></a>7.3 输出详解</h3><p>当没有在工具中使用 <code>get_stream_writer</code> 时，custom 模式<strong>没有输出</strong>。</p>
+<p>只有在工具内部主动发送数据时才会产生输出。</p>
+<h3 id="7-4-在工具中使用-get-stream-writer"><a href="#7-4-在工具中使用-get-stream-writer" class="headerlink" title="7.4 在工具中使用 get_stream_writer"></a>7.4 在工具中使用 get_stream_writer</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">from</span> langgraph.config <span class="keyword">import</span> get_stream_writer</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">process_large_data</span>(<span class="params">data: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;处理大量数据&quot;&quot;&quot;</span></span><br><span class="line">    writer = get_stream_writer()</span><br><span class="line"></span><br><span class="line">    records = data.split(<span class="string">&quot;,&quot;</span>)</span><br><span class="line">    results = []</span><br><span class="line"></span><br><span class="line">    <span class="keyword">for</span> i, record <span class="keyword">in</span> <span class="built_in">enumerate</span>(records):</span><br><span class="line">        <span class="comment"># 处理每条记录...</span></span><br><span class="line">        results.append(record.strip())</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 主动发送进度信息</span></span><br><span class="line">        writer(&#123;</span><br><span class="line">            <span class="string">&quot;progress&quot;</span>: <span class="string">f&quot;已处理 <span class="subst">&#123;i+<span class="number">1</span>&#125;</span>/<span class="subst">&#123;<span class="built_in">len</span>(records)&#125;</span> 条记录&quot;</span>,</span><br><span class="line">            <span class="string">&quot;current&quot;</span>: record.strip()</span><br><span class="line">        &#125;)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;处理完成，共 <span class="subst">&#123;<span class="built_in">len</span>(results)&#125;</span> 条&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 使用示例</span></span><br><span class="line">agent = create_agent(model=model, tools=[process_large_data])</span><br><span class="line"></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [(<span class="string">&quot;user&quot;</span>, <span class="string">&quot;处理数据：张三,李四,王五,赵六,钱七&quot;</span>)]&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;custom&quot;</span></span><br><span class="line">):</span><br><span class="line">    <span class="built_in">print</span>(chunk)</span><br><span class="line">    <span class="comment"># &#123;&#x27;progress&#x27;: &#x27;已处理 1/5 条记录&#x27;, &#x27;current&#x27;: &#x27;张三&#x27;&#125;</span></span><br><span class="line">    <span class="comment"># &#123;&#x27;progress&#x27;: &#x27;已处理 2/5 条记录&#x27;, &#x27;current&#x27;: &#x27;李四&#x27;&#125;</span></span><br><span class="line">    <span class="comment"># &#123;&#x27;progress&#x27;: &#x27;已处理 3/5 条记录&#x27;, &#x27;current&#x27;: &#x27;王五&#x27;&#125;</span></span><br><span class="line">    <span class="comment"># &#123;&#x27;progress&#x27;: &#x27;已处理 4/5 条记录&#x27;, &#x27;current&#x27;: &#x27;赵六&#x27;&#125;</span></span><br><span class="line">    <span class="comment"># &#123;&#x27;progress&#x27;: &#x27;已处理 5/5 条记录&#x27;, &#x27;current&#x27;: &#x27;钱七&#x27;&#125;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>适用场景：</strong></p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>示例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>进度条</strong></td>
+<td>“已处理 10&#x2F;100 条记录”</td>
+</tr>
+<tr>
+<td><strong>自定义日志</strong></td>
+<td>“正在连接数据库…”</td>
+</tr>
+<tr>
+<td><strong>业务指标</strong></td>
+<td>“本次查询耗时 2.3s”</td>
+</tr>
+<tr>
+<td><strong>中间结果</strong></td>
+<td>“第1轮分析完成，发现3个关键信息”</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="八、六种模式全面对比"><a href="#八、六种模式全面对比" class="headerlink" title="八、六种模式全面对比"></a>八、六种模式全面对比</h2><h3 id="8-1-对比总表"><a href="#8-1-对比总表" class="headerlink" title="8.1 对比总表"></a>8.1 对比总表</h3><table>
+<thead>
+<tr>
+<th>对比项</th>
+<th align="center">values</th>
+<th align="center">updates</th>
+<th align="center">messages</th>
+<th align="center">tasks</th>
+<th align="center">debug</th>
+<th align="center">custom</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>输出内容</strong></td>
+<td align="center">完整状态</td>
+<td align="center">增量变化</td>
+<td align="center">流式 Token</td>
+<td align="center">任务事件</td>
+<td align="center">任务事件（详细）</td>
+<td align="center">自定义数据</td>
+</tr>
+<tr>
+<td><strong>输出粒度</strong></td>
+<td align="center">步骤级</td>
+<td align="center">步骤级</td>
+<td align="center">Token 级</td>
+<td align="center">事件级</td>
+<td align="center">事件级（更详细）</td>
+<td align="center">自定义</td>
+</tr>
+<tr>
+<td><strong>数据量</strong></td>
+<td align="center">逐渐增大</td>
+<td align="center">恒定</td>
+<td align="center">逐 Token</td>
+<td align="center">少</td>
+<td align="center">中</td>
+<td align="center">取决于实现</td>
+</tr>
+<tr>
+<td><strong>打字机效果</strong></td>
+<td align="center">不支持</td>
+<td align="center">不支持</td>
+<td align="center">支持</td>
+<td align="center">不支持</td>
+<td align="center">不支持</td>
+<td align="center">不支持</td>
+</tr>
+<tr>
+<td><strong>状态持久化</strong></td>
+<td align="center">适合</td>
+<td align="center">不适合</td>
+<td align="center">不适合</td>
+<td align="center">不适合</td>
+<td align="center">不适合</td>
+<td align="center">不适合</td>
+</tr>
+<tr>
+<td><strong>监控进度</strong></td>
+<td align="center">可以</td>
+<td align="center">最适合</td>
+<td align="center">不适合</td>
+<td align="center">适合</td>
+<td align="center">适合</td>
+<td align="center">不适合</td>
+</tr>
+<tr>
+<td><strong>调试</strong></td>
+<td align="center">可以</td>
+<td align="center">可以</td>
+<td align="center">不适合</td>
+<td align="center">可以</td>
+<td align="center">最适合</td>
+<td align="center">取决于实现</td>
+</tr>
+<tr>
+<td><strong>业务进度</strong></td>
+<td align="center">不适合</td>
+<td align="center">不适合</td>
+<td align="center">不适合</td>
+<td align="center">不适合</td>
+<td align="center">不适合</td>
+<td align="center">最适合</td>
+</tr>
+<tr>
+<td><strong>实时性</strong></td>
+<td align="center">低</td>
+<td align="center">中</td>
+<td align="center">最高</td>
+<td align="center">中</td>
+<td align="center">中</td>
+<td align="center">取决于实现</td>
+</tr>
+<tr>
+<td><strong>性能开销</strong></td>
+<td align="center">高</td>
+<td align="center">低</td>
+<td align="center">中</td>
+<td align="center">低</td>
+<td align="center">中</td>
+<td align="center">取决于实现</td>
+</tr>
+</tbody></table>
+<h3 id="8-2-输出粒度对比"><a href="#8-2-输出粒度对比" class="headerlink" title="8.2 输出粒度对比"></a>8.2 输出粒度对比</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                    六种模式的粒度对比                                     │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                         │</span><br><span class="line">│  values:    ■■■■■■■■■■          ← 每步输出全部（最粗）                  │</span><br><span class="line">│  updates:   ■ ■ ■ ■              ← 每步只输出新增                       │</span><br><span class="line">│  messages:  ····················  ← 逐 Token（最细）                    │</span><br><span class="line">│  tasks:     ▶ ── ▶  ▶ ── ▶      ← 任务 start/end 事件                  │</span><br><span class="line">│  debug:     ▶ ── ▶  ▶ ── ▶  +   ← 任务事件 + 时间戳 + 类型              │</span><br><span class="line">│  custom:    （由开发者控制）       ← 完全自定义                           │</span><br><span class="line">│                                                                         │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<h3 id="8-3-选择指南"><a href="#8-3-选择指南" class="headerlink" title="8.3 选择指南"></a>8.3 选择指南</h3><figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">┌─────────────────────────────────────────────────────────────────────┐</span><br><span class="line">│                    stream_mode 选择指南                              │</span><br><span class="line">├─────────────────────────────────────────────────────────────────────┤</span><br><span class="line">│                                                                     │</span><br><span class="line">│   需要打字机效果 / 实时逐字展示？                                    │</span><br><span class="line">│       ├── 是 → &quot;messages&quot;                                           │</span><br><span class="line">│       └── 否 ↓                                                      │</span><br><span class="line">│                                                                     │</span><br><span class="line">│   需要每步获取完整状态 / 状态持久化？                                  │</span><br><span class="line">│       ├── 是 → &quot;values&quot;                                             │</span><br><span class="line">│       └── 否 ↓                                                      │</span><br><span class="line">│                                                                     │</span><br><span class="line">│   需要监控 Agent 执行进度？                                          │</span><br><span class="line">│       ├── 是 → &quot;updates&quot;（默认，最常用）                             │</span><br><span class="line">│       └── 否 ↓                                                      │</span><br><span class="line">│                                                                     │</span><br><span class="line">│   需要监控工具调用的生命周期？                                        │</span><br><span class="line">│       ├── 是 → 需要详细调试信息？                                    │</span><br><span class="line">│       │       ├── 是 → &quot;debug&quot;                                      │</span><br><span class="line">│       │       └── 否 → &quot;tasks&quot;                                      │</span><br><span class="line">│       └── 否 ↓                                                      │</span><br><span class="line">│                                                                     │</span><br><span class="line">│   需要输出业务进度 / 自定义数据？                                     │</span><br><span class="line">│       ├── 是 → &quot;custom&quot;                                             │</span><br><span class="line">│       └── 否 → 用 &quot;updates&quot; 就对了                                  │</span><br><span class="line">│                                                                     │</span><br><span class="line">└─────────────────────────────────────────────────────────────────────┘</span><br></pre></td></tr></table></figure>
+
+<p><strong>一句话总结：</strong></p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>推荐模式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>日常开发、监控进度</td>
+<td><strong>updates</strong>（默认）</td>
+</tr>
+<tr>
+<td>前端打字机效果</td>
+<td><strong>messages</strong></td>
+</tr>
+<tr>
+<td>状态持久化</td>
+<td><strong>values</strong></td>
+</tr>
+<tr>
+<td>工具调用监控</td>
+<td><strong>tasks</strong></td>
+</tr>
+<tr>
+<td>开发调试</td>
+<td><strong>debug</strong></td>
+</tr>
+<tr>
+<td>业务进度展示</td>
+<td><strong>custom</strong></td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="九、多模式组合使用"><a href="#九、多模式组合使用" class="headerlink" title="九、多模式组合使用"></a>九、多模式组合使用</h2><p><code>stream_mode</code> 支持同时传入多个模式，获取不同维度的输出：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># 同时获取 updates 和 messages</span></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [...]&#125;,</span><br><span class="line">    stream_mode=[<span class="string">&quot;updates&quot;</span>, <span class="string">&quot;messages&quot;</span>]</span><br><span class="line">):</span><br><span class="line">    <span class="built_in">print</span>(chunk)</span><br></pre></td></tr></table></figure>
+
+<p><strong>常见组合：</strong></p>
+<table>
+<thead>
+<tr>
+<th>组合</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>[&quot;updates&quot;, &quot;messages&quot;]</code></td>
+<td>既看步骤进度，又看逐字输出</td>
+</tr>
+<tr>
+<td><code>[&quot;updates&quot;, &quot;tasks&quot;]</code></td>
+<td>既看节点变化，又看工具调用生命周期</td>
+</tr>
+<tr>
+<td><code>[&quot;values&quot;, &quot;debug&quot;]</code></td>
+<td>完整状态 + 详细调试信息</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="十、常见问题"><a href="#十、常见问题" class="headerlink" title="十、常见问题"></a>十、常见问题</h2><h3 id="Q1：stream-mode-的默认值是什么？"><a href="#Q1：stream-mode-的默认值是什么？" class="headerlink" title="Q1：stream_mode 的默认值是什么？"></a>Q1：<code>stream_mode</code> 的默认值是什么？</h3><p>默认值是 <code>&quot;updates&quot;</code>。如果不传 <code>stream_mode</code> 参数，等同于 <code>stream_mode=&quot;updates&quot;</code>。</p>
+<h3 id="Q2：messages-模式下-chunk-的结构是什么？"><a href="#Q2：messages-模式下-chunk-的结构是什么？" class="headerlink" title="Q2：messages 模式下 chunk 的结构是什么？"></a>Q2：<code>messages</code> 模式下 chunk 的结构是什么？</h3><p>chunk 是一个<strong>元组</strong> <code>(消息对象, 元数据)</code>：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(&#123;<span class="string">&quot;messages&quot;</span>: [...]&#125;, stream_mode=<span class="string">&quot;messages&quot;</span>):</span><br><span class="line">    message = chunk[<span class="number">0</span>]      <span class="comment"># AIMessageChunk 对象</span></span><br><span class="line">    metadata = chunk[<span class="number">1</span>]     <span class="comment"># 元数据字典（包含节点名等信息）</span></span><br><span class="line">    text = chunk[<span class="number">0</span>].content <span class="comment"># 本次的 token 文本</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="Q3：为什么-custom-模式没有输出？"><a href="#Q3：为什么-custom-模式没有输出？" class="headerlink" title="Q3：为什么 custom 模式没有输出？"></a>Q3：为什么 <code>custom</code> 模式没有输出？</h3><p><code>custom</code> 模式需要开发者在工具内部使用 <code>get_stream_writer</code> 主动发送数据。如果没有使用，则不会有输出。参见 <a href="#74-%E5%9C%A8%E5%B7%A5%E5%85%B7%E4%B8%AD%E4%BD%BF%E7%94%A8-get_stream_writer">7.4 在工具中使用 get_stream_writer</a>。</p>
+<h3 id="Q4：values-模式的最后一个-chunk-等于-invoke-的返回值吗？"><a href="#Q4：values-模式的最后一个-chunk-等于-invoke-的返回值吗？" class="headerlink" title="Q4：values 模式的最后一个 chunk 等于 invoke() 的返回值吗？"></a>Q4：<code>values</code> 模式的最后一个 chunk 等于 <code>invoke()</code> 的返回值吗？</h3><p>是的。<code>values</code> 模式最后一个 chunk 包含完整的最终状态，等价于 <code>agent.invoke()</code> 的返回值。</p>
+<h3 id="Q5：如何在-Web-框架中实现打字机效果？"><a href="#Q5：如何在-Web-框架中实现打字机效果？" class="headerlink" title="Q5：如何在 Web 框架中实现打字机效果？"></a>Q5：如何在 Web 框架中实现打字机效果？</h3><figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="comment"># FastAPI + SSE 示例</span></span><br><span class="line"><span class="keyword">from</span> fastapi <span class="keyword">import</span> FastAPI</span><br><span class="line"><span class="keyword">from</span> fastapi.responses <span class="keyword">import</span> StreamingResponse</span><br><span class="line"></span><br><span class="line">app = FastAPI()</span><br><span class="line"></span><br><span class="line"><span class="meta">@app.post(<span class="params"><span class="string">&quot;/chat&quot;</span></span>)</span></span><br><span class="line"><span class="keyword">async</span> <span class="keyword">def</span> <span class="title function_">chat</span>(<span class="params">message: <span class="built_in">str</span></span>):</span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">generate</span>():</span><br><span class="line">        <span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(</span><br><span class="line">            &#123;<span class="string">&quot;messages&quot;</span>: [(<span class="string">&quot;user&quot;</span>, message)]&#125;,</span><br><span class="line">            stream_mode=<span class="string">&quot;messages&quot;</span></span><br><span class="line">        ):</span><br><span class="line">            <span class="keyword">yield</span> <span class="string">f&quot;data: <span class="subst">&#123;chunk[<span class="number">0</span>].content&#125;</span>\n\n&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> StreamingResponse(generate(), media_type=<span class="string">&quot;text/event-stream&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="Q6：六种模式可以组合使用吗？"><a href="#Q6：六种模式可以组合使用吗？" class="headerlink" title="Q6：六种模式可以组合使用吗？"></a>Q6：六种模式可以组合使用吗？</h3><p>可以。传入列表即可：</p>
+<figure class="highlight python"><table><tr><td class="code"><pre><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> agent.stream(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: [...]&#125;,</span><br><span class="line">    stream_mode=[<span class="string">&quot;updates&quot;</span>, <span class="string">&quot;messages&quot;</span>]</span><br><span class="line">):</span><br><span class="line">    <span class="built_in">print</span>(chunk)</span><br></pre></td></tr></table></figure>
+]]></content>
+      <categories>
+        <category>Python</category>
+      </categories>
+      <tags>
+        <tag>Python</tag>
+        <tag>学习笔记</tag>
+        <tag>LangChain</tag>
+        <tag>DeepSeek</tag>
+        <tag>AI</tag>
+        <tag>大模型</tag>
+        <tag>Agent</tag>
+        <tag>Stream</tag>
+      </tags>
+  </entry>
 </search>
