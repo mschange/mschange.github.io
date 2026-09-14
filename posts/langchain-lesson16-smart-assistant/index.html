@@ -1,0 +1,1001 @@
+<!DOCTYPE html><html lang="zh-CN" data-theme="light"><head><meta charset="UTF-8"><meta http-equiv="X-UA-Compatible" content="IE=edge"><meta name="viewport" content="width=device-width, initial-scale=1.0,viewport-fit=cover"><title>LangChain 16：多功能智能助手开发完全指南 | 筎柒的个人笔记</title><meta name="author" content="筎柒"><meta name="copyright" content="筎柒"><meta name="format-detection" content="telephone=no"><meta name="theme-color" content="#ffffff"><meta name="description" content="从零构建多功能智能助手：五大工具定义、Agent 创建、类封装与交互式多轮对话，循序渐进完成完整应用。">
+<meta property="og:type" content="article">
+<meta property="og:title" content="LangChain 16：多功能智能助手开发完全指南">
+<meta property="og:url" content="https://mschange.github.io/posts/langchain-lesson16-smart-assistant/index.html">
+<meta property="og:site_name" content="筎柒的个人笔记">
+<meta property="og:description" content="从零构建多功能智能助手：五大工具定义、Agent 创建、类封装与交互式多轮对话，循序渐进完成完整应用。">
+<meta property="og:locale" content="zh_CN">
+<meta property="og:image" content="https://mschange.github.io/img/post-cover.jpg">
+<meta property="article:published_time" content="2026-09-14T13:38:00.000Z">
+<meta property="article:modified_time" content="2026-09-14T13:38:00.000Z">
+<meta property="article:author" content="筎柒">
+<meta property="article:tag" content="Python">
+<meta property="article:tag" content="学习笔记">
+<meta property="article:tag" content="项目实战">
+<meta property="article:tag" content="LangChain">
+<meta property="article:tag" content="DeepSeek">
+<meta property="article:tag" content="AI">
+<meta property="article:tag" content="大模型">
+<meta property="article:tag" content="Agent">
+<meta property="article:tag" content="Tool">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="https://mschange.github.io/img/post-cover.jpg"><script type="application/ld+json">{
+  "@context": "https://schema.org",
+  "@type": "BlogPosting",
+  "headline": "LangChain 16：多功能智能助手开发完全指南",
+  "url": "https://mschange.github.io/posts/langchain-lesson16-smart-assistant/",
+  "image": "https://mschange.github.io/img/post-cover.jpg",
+  "datePublished": "2026-09-14T13:38:00.000Z",
+  "dateModified": "2026-09-14T13:38:00.000Z",
+  "author": [
+    {
+      "@type": "Person",
+      "name": "筎柒",
+      "url": "https://mschange.github.io"
+    }
+  ]
+}</script><link rel="shortcut icon" href="/img/favicon.ico"><link rel="canonical" href="https://mschange.github.io/posts/langchain-lesson16-smart-assistant/index.html"><link rel="preconnect" href="//cdn.jsdelivr.net"/><link rel="preconnect" href="//busuanzi.ibruce.info"/><link rel="stylesheet" href="/css/index.css?v=5.7.0"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fortawesome/fontawesome-free@7.3.1/css/all.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@fancyapps/ui@6.1.14/dist/fancybox/fancybox.min.css" media="print" onload="this.media='all'"><script>
+    (() => {
+      
+    const saveToLocal = {
+      set: (key, value, ttl) => {
+        const data = { value }
+
+        if (ttl != null) {
+          data.expiry = Date.now() + ttl * 86400000
+        }
+
+        localStorage.setItem(key, JSON.stringify(data))
+      },
+      get: key => {
+        const itemStr = localStorage.getItem(key)
+        if (!itemStr) return
+
+        try {
+          const data = JSON.parse(itemStr)
+
+          if (data.expiry && Date.now() > data.expiry) {
+            localStorage.removeItem(key)
+            return
+          }
+
+          return data.value
+        } catch {
+          localStorage.removeItem(key)
+        }
+      }
+    }
+
+    const scriptCache = new Map()
+    const cssCache = new Map()
+    window.btf = {
+      saveToLocal,
+      getScript: (url, attr = {}) => {
+        if (scriptCache.has(url)) {
+          return scriptCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const script = document.createElement('script')
+
+          script.src = url
+          script.async = true
+
+          for (const key in attr) {
+            script.setAttribute(key, attr[key])
+          }
+
+          script.onload = resolve
+          script.onerror = reject
+
+          document.head.appendChild(script)
+        })
+
+        scriptCache.set(url, promise)
+
+        return promise
+      },
+      getCSS: (url, id) => {
+        if (cssCache.has(url)) {
+          return cssCache.get(url)
+        }
+
+        const promise = new Promise((resolve, reject) => {
+          const link = document.createElement('link')
+
+          link.rel = 'stylesheet'
+          link.href = url
+
+          if (id) {
+            link.id = id
+          }
+
+          link.onload = resolve
+          link.onerror = reject
+
+          document.head.appendChild(link)
+        })
+
+        cssCache.set(url, promise)
+
+        return promise
+      },
+      addGlobalFn: (key, fn, name = false, parent = window) => {
+        if (!true && key.startsWith('pjax')) return
+        const globalFn = parent.globalFn || {}
+        globalFn[key] = globalFn[key] || {}
+        globalFn[key][name || Object.keys(globalFn[key]).length] = fn
+        parent.globalFn = globalFn
+      }
+    }
+  
+      
+      const metaThemeColor = document.querySelector('meta[name="theme-color"]')
+      const activateDarkMode = () => {
+        document.documentElement.dataset.theme = 'dark'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#0d0d0d')
+        }
+      }
+      const activateLightMode = () => {
+        document.documentElement.dataset.theme = 'light'
+        if (metaThemeColor !== null) {
+          metaThemeColor.setAttribute('content', '#ffffff')
+        }
+      }
+
+      btf.activateDarkMode = activateDarkMode
+      btf.activateLightMode = activateLightMode
+
+      const theme = saveToLocal.get('theme')
+    
+          theme === 'dark' ? activateDarkMode() : theme === 'light' ? activateLightMode() : null
+        
+      
+      const asideStatus = saveToLocal.get('aside-status')
+      if (asideStatus !== undefined) {
+        document.documentElement.classList.toggle('hide-aside', asideStatus === 'hide')
+      }
+    
+      
+    const detectApple = () => {
+      if (/iPad|iPhone|iPod|Macintosh/.test(navigator.userAgent)) {
+        document.documentElement.classList.add('apple')
+      }
+    }
+    detectApple()
+  
+    })()
+  </script><script>const GLOBAL_CONFIG = {
+  root: '/',
+  algolia: undefined,
+  localSearch: {"path":"/search.xml","preload":false,"top_n_per_article":1,"unescape":false,"pagination":{"enable":false,"hitsPerPage":8},"languages":{"hits_empty":"未找到符合您查询的内容：${query}","hits_stats":"共找到 ${hits} 篇文章"}},
+  translate: undefined,
+  highlight: {"plugin":"highlight.js","highlightCopy":true,"highlightLang":true,"highlightHeightLimit":false,"highlightFullpage":false,"highlightMacStyle":true},
+  copy: {
+    success: '复制成功',
+    error: '复制失败',
+    noSupport: '浏览器不支持'
+  },
+  relativeDate: {
+    homepage: false,
+    post: false
+  },
+  runtime: '',
+  dateSuffix: {
+    just: '刚刚',
+    min: '分钟前',
+    hour: '小时前',
+    day: '天前',
+    month: '个月前'
+  },
+  copyright: undefined,
+  lightbox: 'fancybox',
+  Snackbar: undefined,
+  infinitegrid: {
+    js: 'https://cdn.jsdelivr.net/npm/@egjs/infinitegrid@4.13.0/dist/infinitegrid.min.js',
+    buttonText: '加载更多'
+  },
+  isPhotoFigcaption: false,
+  islazyloadPlugin: false,
+  isAnchor: false,
+  percent: {
+    toc: true,
+    rightside: true,
+  },
+  autoDarkmode: false
+}</script><script id="config-diff">var GLOBAL_CONFIG_SITE = {
+  title: 'LangChain 16：多功能智能助手开发完全指南',
+  isHighlightShrink: false,
+  isToc: true,
+  pageType: 'post'
+}</script><link rel="stylesheet" href="/css/custom.css"><meta name="generator" content="Hexo 7.3.0"></head><body><div id="loading-box"><div class="loading-left-bg"></div><div class="loading-right-bg"></div><div class="spinner-box"><div class="configure-border-1"><div class="configure-core"></div></div><div class="configure-border-2"><div class="configure-core"></div></div><div class="loading-word">加载中...</div></div></div><script>(()=>{
+  const $loadingBox = document.getElementById('loading-box')
+  const $body = document.body
+  const preloader = {
+    endLoading: () => {
+      if ($loadingBox.classList.contains('loaded')) return
+      $body.style.overflow = ''
+      $loadingBox.classList.add('loaded')
+    },
+    initLoading: () => {
+      $body.style.overflow = 'hidden'
+      $loadingBox.classList.remove('loaded')
+    }
+  }
+
+  preloader.initLoading()
+
+  if (document.readyState === 'complete') {
+    preloader.endLoading()
+  } else {
+    window.addEventListener('load', preloader.endLoading)
+    document.addEventListener('DOMContentLoaded', preloader.endLoading)
+    // Add timeout protection: force end after 7 seconds
+    setTimeout(preloader.endLoading, 7000)
+  }
+
+  if (true) {
+    btf.addGlobalFn('pjaxSend', preloader.initLoading, 'preloader_init')
+    btf.addGlobalFn('pjaxComplete', preloader.endLoading, 'preloader_end')
+  }
+})()</script><div class="bg-animation" id="web_bg" style="background-image: url(/img/background.jpg);"></div><div id="sidebar"><div id="menu-mask"></div><div id="sidebar-menus"><div class="avatar-img text-center"><img src="/img/avatar.png" onerror="this.onerror=null;this.src='/img/friend_404.gif'" alt="avatar"/></div><div class="site-data text-center"><a href="/archives/"><div class="headline">文章</div><div class="length-num">43</div></a><a href="/tags/"><div class="headline">标签</div><div class="length-num">30</div></a><a href="/categories/"><div class="headline">分类</div><div class="length-num">2</div></a></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div></div></div></div><div class="post" id="body-wrap"><header class="not-top-img fixed" id="page-header"><nav id="nav"><span id="blog-info"><a class="nav-site-title" href="/"><span class="site-name">筎柒的个人笔记</span></a><a class="nav-page-title" href="/"><span class="site-name">LangChain 16：多功能智能助手开发完全指南</span><span class="site-name"><i class="fa-solid fa-circle-arrow-left"></i><span>  返回首页</span></span></a></span><div id="menus"><div id="search-button"><span class="site-page social-icon search"><i class="fas fa-search fa-fw"></i><span> 搜索</span></span></div><div class="menus_items"><div class="menus_item"><a class="site-page" href="/"><i class="fa-fw fas fa-home"></i><span> 首页</span></a></div><div class="menus_item"><a class="site-page" href="/tags/"><i class="fa-fw fas fa-tags"></i><span> 标签</span></a></div><div class="menus_item"><a class="site-page" href="/categories/"><i class="fa-fw fas fa-folder-open"></i><span> 分类</span></a></div><div class="menus_item"><a class="site-page" href="/archives/"><i class="fa-fw fas fa-archive"></i><span> 归档</span></a></div></div><div id="toggle-menu"><span class="site-page"><i class="fas fa-bars fa-fw"></i></span></div></div></nav></header><main class="layout" id="content-inner"><div id="post"><div id="post-info"><h1 class="post-title">LangChain 16：多功能智能助手开发完全指南</h1><div id="post-meta"><div class="meta-firstline"><span class="post-meta-date"><i class="fa-fw post-meta-icon far fa-calendar-alt"></i><span class="post-meta-label">发表于</span><time datetime="2026-09-14T13:38:00.000Z" title="发表于 2026-09-14 21:38:00">2026-09-14</time></span><span class="post-meta-categories"><span class="post-meta-separator">|</span><i class="fas fa-inbox fa-fw post-meta-icon"></i><a class="post-meta-categories" href="/categories/Python/">Python</a></span></div><div class="meta-secondline"><span class="post-meta-separator">|</span><span class="post-meta-wordcount"><i class="far fa-file-word fa-fw post-meta-icon"></i><span class="post-meta-label">总字数:</span><span class="word-count">8.7k</span><span class="post-meta-separator">|</span><i class="far fa-clock fa-fw post-meta-icon"></i><span class="post-meta-label">阅读时长:</span><span>35分钟</span></span><span class="post-meta-separator">|</span><span class="post-meta-pv-cv" id="" data-flag-title=""><i class="far fa-eye fa-fw post-meta-icon"></i><span class="post-meta-label">浏览量:</span><span id="busuanzi_value_page_pv"><i class="fa-solid fa-spinner fa-spin"></i></span></span></div></div></div><article class="container post-content" id="article-container"><h1 id="LangChain-16：多功能智能助手开发完全指南"><a href="#LangChain-16：多功能智能助手开发完全指南" class="headerlink" title="LangChain 16：多功能智能助手开发完全指南"></a>LangChain 16：多功能智能助手开发完全指南</h1><blockquote>
+<p>从零开始，循序渐进地构建一个多功能智能助手。从环境搭建、工具定义，到 Agent 创建、类封装，最终实现交互式问答系统。每一步都在前一步的基础上演进。</p>
+</blockquote>
+<hr>
+<h2 id="目录"><a href="#目录" class="headerlink" title="目录"></a>目录</h2><ul>
+<li><a href="#%E4%B8%80%E9%A1%B9%E7%9B%AE%E7%9B%AE%E6%A0%87">一、项目目标</a><ul>
+<li><a href="#11-%E5%8A%9F%E8%83%BD%E8%A7%84%E5%88%92">1.1 功能规划</a></li>
+<li><a href="#12-%E5%BC%80%E5%8F%91%E8%B7%AF%E7%BA%BF">1.2 开发路线</a></li>
+<li><a href="#13-%E4%BE%9D%E8%B5%96%E5%AF%BC%E5%85%A5">1.3 依赖导入</a></li>
+</ul>
+</li>
+<li><a href="#%E4%BA%8C%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%E4%B8%8E%E6%A8%A1%E5%9E%8B%E5%88%9D%E5%A7%8B%E5%8C%96">二、环境配置与模型初始化</a><ul>
+<li><a href="#21-%E9%80%90%E8%A1%8C%E8%A7%A3%E6%9E%90">2.1 逐行解析</a></li>
+<li><a href="#22-init_chat_model-%E7%9A%84%E7%BB%9F%E4%B8%80%E6%8E%A5%E5%8F%A3">2.2 init_chat_model 的统一接口</a></li>
+</ul>
+</li>
+<li><a href="#%E4%B8%89%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5--%E5%B7%A5%E5%85%B7%E5%AE%9A%E4%B9%89">三、第一阶段 — 工具定义</a><ul>
+<li><a href="#31-tool-%E8%A3%85%E9%A5%B0%E5%99%A8%E6%9C%BA%E5%88%B6">3.1 @tool 装饰器机制</a></li>
+<li><a href="#32-%E5%B7%A5%E5%85%B7%E4%B8%80%E5%A4%A9%E6%B0%94%E6%9F%A5%E8%AF%A2">3.2 工具一：天气查询</a></li>
+<li><a href="#33-%E5%B7%A5%E5%85%B7%E4%BA%8C%E6%95%B0%E5%AD%A6%E8%AE%A1%E7%AE%97">3.3 工具二：数学计算</a></li>
+<li><a href="#34-%E5%B7%A5%E5%85%B7%E4%B8%89%E6%97%B6%E9%97%B4%E6%9F%A5%E8%AF%A2">3.4 工具三：时间查询</a></li>
+<li><a href="#35-%E5%B7%A5%E5%85%B7%E5%9B%9B%E8%B4%A7%E5%B8%81%E8%BD%AC%E6%8D%A2">3.5 工具四：货币转换</a></li>
+<li><a href="#36-%E5%B7%A5%E5%85%B7%E4%BA%94%E4%BF%A1%E6%81%AF%E6%90%9C%E7%B4%A2">3.6 工具五：信息搜索</a></li>
+<li><a href="#37-%E5%B7%A5%E5%85%B7%E8%AE%BE%E8%AE%A1%E8%BF%9B%E9%98%B6%E6%80%BB%E7%BB%93">3.7 工具设计进阶总结</a></li>
+</ul>
+</li>
+<li><a href="#%E5%9B%9B%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5--%E5%88%9B%E5%BB%BA-agent-%E5%B9%B6%E6%B5%8B%E8%AF%95">四、第二阶段 — 创建 Agent 并测试</a><ul>
+<li><a href="#41-%E5%88%9B%E5%BB%BA-agent">4.1 创建 Agent</a></li>
+<li><a href="#42-agentinvoke-%E8%B0%83%E7%94%A8%E8%A7%84%E8%8C%83">4.2 agent.invoke() 调用规范</a></li>
+<li><a href="#43-%E6%B5%8B%E8%AF%95%E7%94%A8%E4%BE%8B">4.3 测试用例</a></li>
+<li><a href="#44-%E8%BF%87%E7%A8%8B%E5%BC%8F%E7%9A%84%E7%89%B9%E7%82%B9">4.4 过程式的特点</a></li>
+</ul>
+</li>
+<li><a href="#%E4%BA%94%E7%AC%AC%E4%B8%89%E9%98%B6%E6%AE%B5--%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E5%B0%81%E8%A3%85%E4%B8%8E%E4%BA%A4%E4%BA%92%E5%BC%8F%E9%97%AE%E7%AD%94">五、第三阶段 — 面向对象封装与交互式问答</a><ul>
+<li><a href="#51-smartassistant-%E7%B1%BB">5.1 SmartAssistant 类</a></li>
+<li><a href="#52-chat-%E6%96%B9%E6%B3%95--%E5%A4%9A%E8%BD%AE%E5%AF%B9%E8%AF%9D%E7%9A%84%E6%A0%B8%E5%BF%83">5.2 chat() 方法 — 多轮对话的核心</a></li>
+<li><a href="#53-reset-%E6%96%B9%E6%B3%95--%E9%87%8D%E7%BD%AE%E5%AF%B9%E8%AF%9D">5.3 reset() 方法 — 重置对话</a></li>
+<li><a href="#54-%E4%BA%A4%E4%BA%92%E5%BC%8F%E9%97%AE%E7%AD%94%E4%B8%BB%E5%BE%AA%E7%8E%AF">5.4 交互式问答主循环</a></li>
+</ul>
+</li>
+<li><a href="#%E5%85%AD%E4%B8%A4%E7%A7%8D%E6%9E%B6%E6%9E%84%E5%AF%B9%E6%AF%94">六、两种架构对比</a><ul>
+<li><a href="#61-%E4%BB%A3%E7%A0%81%E7%BB%93%E6%9E%84%E5%AF%B9%E6%AF%94">6.1 代码结构对比</a></li>
+<li><a href="#62-%E5%8A%9F%E8%83%BD%E5%AF%B9%E6%AF%94">6.2 功能对比</a></li>
+<li><a href="#63-%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF">6.3 适用场景</a></li>
+</ul>
+</li>
+<li><a href="#%E4%B8%83%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86%E7%82%B9%E6%80%BB%E7%BB%93">七、核心知识点总结</a><ul>
+<li><a href="#71-create_agent-%E5%AE%8C%E6%95%B4%E5%8F%82%E6%95%B0">7.1 create_agent 完整参数</a></li>
+<li><a href="#72-tool-%E8%A3%85%E9%A5%B0%E5%99%A8%E5%AE%8C%E6%95%B4%E7%94%A8%E6%B3%95">7.2 @tool 装饰器完整用法</a></li>
+<li><a href="#73-agentinvoke-%E8%B0%83%E7%94%A8%E8%A7%84%E8%8C%83">7.3 agent.invoke() 调用规范</a></li>
+<li><a href="#74-%E5%A4%9A%E8%BD%AE%E5%AF%B9%E8%AF%9D%E6%B6%88%E6%81%AF%E7%AE%A1%E7%90%86">7.4 多轮对话消息管理</a></li>
+<li><a href="#75-%E5%B7%A5%E5%85%B7%E8%AE%BE%E8%AE%A1%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5">7.5 工具设计最佳实践</a></li>
+</ul>
+</li>
+<li><a href="#%E5%85%AB%E6%89%A9%E5%B1%95%E5%BB%BA%E8%AE%AE">八、扩展建议</a><ul>
+<li><a href="#81-%E5%A2%9E%E5%8A%A0%E6%9B%B4%E5%A4%9A%E5%B7%A5%E5%85%B7">8.1 增加更多工具</a></li>
+<li><a href="#82-%E6%8E%A5%E5%85%A5%E7%9C%9F%E5%AE%9E-api">8.2 接入真实 API</a></li>
+<li><a href="#83-%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BA">8.3 流式输出</a></li>
+<li><a href="#84-%E6%8C%81%E4%B9%85%E5%8C%96%E5%AF%B9%E8%AF%9D%E5%8E%86%E5%8F%B2">8.4 持久化对话历史</a></li>
+</ul>
+</li>
+<li><a href="#%E4%B9%9D%E8%BF%90%E8%A1%8C%E6%95%88%E6%9E%9C">九、运行效果</a></li>
+<li><a href="#%E5%8D%81%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81">十、完整代码</a></li>
+</ul>
+<hr>
+<h2 id="一、项目目标"><a href="#一、项目目标" class="headerlink" title="一、项目目标"></a>一、项目目标</h2><h3 id="1-1-功能规划"><a href="#1-1-功能规划" class="headerlink" title="1.1 功能规划"></a>1.1 功能规划</h3><p>我们要开发一个支持以下五大功能的智能助手：</p>
+<table>
+<thead>
+<tr>
+<th>功能</th>
+<th>工具名称</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>天气查询</td>
+<td><code>get_weather</code></td>
+<td>查询指定城市的天气信息</td>
+</tr>
+<tr>
+<td>数学计算</td>
+<td><code>calculator</code></td>
+<td>执行数学表达式运算</td>
+</tr>
+<tr>
+<td>时间查询</td>
+<td><code>get_time_info</code></td>
+<td>获取当前时间、计算日期偏移</td>
+</tr>
+<tr>
+<td>货币转换</td>
+<td><code>convert_currency</code></td>
+<td>多种货币之间的汇率转换</td>
+</tr>
+<tr>
+<td>信息搜索</td>
+<td><code>search_info</code></td>
+<td>搜索产品、新闻等信息</td>
+</tr>
+</tbody></table>
+<h3 id="1-2-开发路线"><a href="#1-2-开发路线" class="headerlink" title="1.2 开发路线"></a>1.2 开发路线</h3><p>整个开发过程分为三个阶段，逐步递进：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">第一阶段：定义工具 → 让每个功能独立可用</span><br><span class="line">    ↓</span><br><span class="line">第二阶段：创建 Agent → 让大模型自动选择和调用工具</span><br><span class="line">    ↓</span><br><span class="line">第三阶段：封装为类 → 支持多轮对话和交互式问答</span><br></pre></td></tr></table></figure>
+
+<h3 id="1-3-依赖导入"><a href="#1-3-依赖导入" class="headerlink" title="1.3 依赖导入"></a>1.3 依赖导入</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"><span class="keyword">from</span> datetime <span class="keyword">import</span> datetime, timedelta</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> langchain_core.messages <span class="keyword">import</span> SystemMessage</span><br><span class="line"><span class="keyword">from</span> rich <span class="keyword">import</span> <span class="built_in">print</span> <span class="keyword">as</span> rprint</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>导入模块</th>
+<th>用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>dotenv</code></td>
+<td>从 <code>.env</code> 文件加载 API Key 等环境变量</td>
+</tr>
+<tr>
+<td><code>init_chat_model</code></td>
+<td>LangChain 统一模型初始化接口</td>
+</tr>
+<tr>
+<td><code>create_agent</code></td>
+<td>创建 Agent 实例</td>
+</tr>
+<tr>
+<td><code>@tool</code></td>
+<td>将普通函数转为 LangChain 工具</td>
+</tr>
+<tr>
+<td><code>SystemMessage</code></td>
+<td>系统提示消息，定义 Agent 角色</td>
+</tr>
+<tr>
+<td><code>rich.print</code></td>
+<td>富文本终端彩色输出</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="二、环境配置与模型初始化"><a href="#二、环境配置与模型初始化" class="headerlink" title="二、环境配置与模型初始化"></a>二、环境配置与模型初始化</h2><p>一切从环境配置开始：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="2-1-逐行解析"><a href="#2-1-逐行解析" class="headerlink" title="2.1 逐行解析"></a>2.1 逐行解析</h3><table>
+<thead>
+<tr>
+<th>代码</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>load_dotenv(override=True)</code></td>
+<td>从 <code>.env</code> 文件加载环境变量（如 <code>DEEPSEEK_API_KEY</code>），<code>override=True</code> 覆盖已存在的环境变量</td>
+</tr>
+<tr>
+<td><code>init_chat_model(model=&quot;deepseek-chat&quot;)</code></td>
+<td>初始化 DeepSeek 聊天模型，自动从环境变量中读取 API Key</td>
+</tr>
+</tbody></table>
+<h3 id="2-2-init-chat-model-的统一接口"><a href="#2-2-init-chat-model-的统一接口" class="headerlink" title="2.2 init_chat_model 的统一接口"></a>2.2 <code>init_chat_model</code> 的统一接口</h3><p><code>init_chat_model</code> 是 LangChain 提供的统一模型初始化接口，一个函数适配多种模型提供商：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)              <span class="comment"># DeepSeek</span></span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;gpt-4o&quot;</span>)                     <span class="comment"># OpenAI</span></span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;claude-3-5-sonnet-20241022&quot;</span>) <span class="comment"># Anthropic</span></span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;qwen-plus&quot;</span>)                  <span class="comment"># 通义千问</span></span><br></pre></td></tr></table></figure>
+
+<p>无需手动导入各厂商的 Chat 类，统一接口自动处理。</p>
+<hr>
+<h2 id="三、第一阶段-—-工具定义"><a href="#三、第一阶段-—-工具定义" class="headerlink" title="三、第一阶段 — 工具定义"></a>三、第一阶段 — 工具定义</h2><h3 id="3-1-tool-装饰器机制"><a href="#3-1-tool-装饰器机制" class="headerlink" title="3.1 @tool 装饰器机制"></a>3.1 <code>@tool</code> 装饰器机制</h3><p>所有工具都使用统一的装饰器模式：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">tool_function</span>(<span class="params">param: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    工具描述（展示给大模型，帮助模型理解工具用途）</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        param (str): 参数描述（帮助模型理解参数含义）</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 返回值描述</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> result</span><br></pre></td></tr></table></figure>
+
+<h4 id="关键要素"><a href="#关键要素" class="headerlink" title="关键要素"></a>关键要素</h4><table>
+<thead>
+<tr>
+<th>要素</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>parse_docstring=True</code></td>
+<td>自动从 docstring 解析工具描述和参数描述，无需额外写 <code>description</code></td>
+</tr>
+<tr>
+<td>类型注解</td>
+<td>函数签名中的类型注解（如 <code>city: str</code>）自动提取为工具的参数 schema</td>
+</tr>
+<tr>
+<td>docstring 格式</td>
+<td>遵循 Google 风格（<code>Args:</code> &#x2F; <code>Returns:</code>），<code>parse_docstring=True</code> 才能正确解析</td>
+</tr>
+<tr>
+<td>返回值</td>
+<td>工具必须返回字符串，Agent 会将返回值传递给大模型作为上下文</td>
+</tr>
+</tbody></table>
+<h4 id="为什么-docstring-如此重要？"><a href="#为什么-docstring-如此重要？" class="headerlink" title="为什么 docstring 如此重要？"></a>为什么 docstring 如此重要？</h4><p>大模型通过工具的 <strong>描述信息</strong> 来决定何时调用哪个工具。docstring 的质量直接决定了工具被调用的准确率：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 好的 docstring — 模型能准确理解工具用途和参数</span></span><br><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_weather</span>(<span class="params">city: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    查询城市天气</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        city (str): 城市名称，例如 &quot;北京&quot; 或 &quot;上海&quot;</span></span><br><span class="line"><span class="string">    ...</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># 差的 docstring — 模型可能误用工具</span></span><br><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_weather</span>(<span class="params">city: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;获取数据&quot;&quot;&quot;</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="3-2-工具一：天气查询"><a href="#3-2-工具一：天气查询" class="headerlink" title="3.2 工具一：天气查询"></a>3.2 工具一：天气查询</h3><p>最简单的工具形式 — 单参数、字典查询、默认值兜底。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_weather</span>(<span class="params">city: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    查询城市天气</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        city (str): 城市名称，例如 &quot;北京&quot; 或 &quot;上海&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 天气信息字符串，包含温度、天气状况、湿度和风力</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    weather_data = &#123;</span><br><span class="line">        <span class="string">&quot;北京&quot;</span>: <span class="string">&quot;晴天，温度28°C，湿度45%，风力3级&quot;</span>,</span><br><span class="line">        <span class="string">&quot;上海&quot;</span>: <span class="string">&quot;多云，温度26°C，湿度65%，风力2级&quot;</span>,</span><br><span class="line">        <span class="string">&quot;广州&quot;</span>: <span class="string">&quot;小雨，温度30°C，湿度80%，风力1级&quot;</span>,</span><br><span class="line">        <span class="string">&quot;深圳&quot;</span>: <span class="string">&quot;阴天，温度29°C，湿度70%，风力2级&quot;</span>,</span><br><span class="line">        <span class="string">&quot;杭州&quot;</span>: <span class="string">&quot;晴天，温度27°C，湿度50%，风力2级&quot;</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> weather_data.get(city, <span class="string">f&quot;<span class="subst">&#123;city&#125;</span>：晴天，温度25°C，湿度50%，风力2级&quot;</span>)</span><br></pre></td></tr></table></figure>
+
+<p><strong>设计要点</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>要点</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>dict.get(key, default)</code></td>
+<td>预定义城市返回固定数据，其他城市返回默认天气，不会报错</td>
+</tr>
+<tr>
+<td>单参数设计</td>
+<td>只需一个 <code>city</code>，降低模型调用出错的概率</td>
+</tr>
+<tr>
+<td>模拟数据</td>
+<td>硬编码模拟真实 API，实际项目中可替换为真实天气 API</td>
+</tr>
+<tr>
+<td>返回格式丰富</td>
+<td>包含温度、天气、湿度、风力，便于模型组织回答</td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="3-3-工具二：数学计算"><a href="#3-3-工具二：数学计算" class="headerlink" title="3.3 工具二：数学计算"></a>3.3 工具二：数学计算</h3><p>引入安全性设计 — 使用 <code>eval()</code> 但通过白名单机制防止危险操作。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">calculator</span>(<span class="params">expression: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    数学计算工具，支持基本运算和数学函数</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        expression (str): 数学表达式，例如 &quot;2**10&quot; 或 &quot;math.sqrt(144)&quot; 或 &quot;math.pi * 5**2&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 计算结果字符串</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    allowed_names = &#123;</span><br><span class="line">        <span class="string">&quot;math&quot;</span>: math,</span><br><span class="line">        <span class="string">&quot;abs&quot;</span>: <span class="built_in">abs</span>,</span><br><span class="line">        <span class="string">&quot;round&quot;</span>: <span class="built_in">round</span>,</span><br><span class="line">        <span class="string">&quot;pow&quot;</span>: <span class="built_in">pow</span>,</span><br><span class="line">        <span class="string">&quot;min&quot;</span>: <span class="built_in">min</span>,</span><br><span class="line">        <span class="string">&quot;max&quot;</span>: <span class="built_in">max</span>,</span><br><span class="line">        <span class="string">&quot;sum&quot;</span>: <span class="built_in">sum</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        result = <span class="built_in">eval</span>(expression, &#123;<span class="string">&quot;__builtins__&quot;</span>: &#123;&#125;&#125;, allowed_names)</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;<span class="subst">&#123;expression&#125;</span> = <span class="subst">&#123;result&#125;</span>&quot;</span></span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;计算错误：<span class="subst">&#123;e&#125;</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="安全性设计（重点）"><a href="#安全性设计（重点）" class="headerlink" title="安全性设计（重点）"></a>安全性设计（重点）</h4><p>这是整个项目中最值得关注的工具，因为它使用了 <code>eval()</code> 来执行表达式。</p>
+<p><strong><code>eval()</code> 的三层防护</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">eval</span>(expression, <span class="built_in">globals</span>, <span class="built_in">locals</span>)</span><br><span class="line"><span class="comment">#           ↑           ↑        ↑</span></span><br><span class="line"><span class="comment">#     用户输入的表达式   禁用内置函数  白名单命名空间</span></span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>安全措施</th>
+<th>代码</th>
+<th>作用</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>禁用内置函数</td>
+<td><code>&#123;&quot;__builtins__&quot;: &#123;&#125;&#125;</code></td>
+<td>防止 <code>__import__(&#39;os&#39;).system(&#39;rm -rf /&#39;)</code> 等危险操作</td>
+</tr>
+<tr>
+<td>白名单机制</td>
+<td><code>allowed_names</code></td>
+<td>只允许使用预定义的数学函数和模块</td>
+</tr>
+<tr>
+<td>异常捕获</td>
+<td><code>try/except</code></td>
+<td>防止非法表达式导致程序崩溃</td>
+</tr>
+</tbody></table>
+<p><strong>允许与阻止的操作</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ✅ 被允许的操作</span></span><br><span class="line"><span class="string">&quot;2**10&quot;</span>                    → <span class="number">1024</span></span><br><span class="line"><span class="string">&quot;math.sqrt(144)&quot;</span>           → <span class="number">12.0</span></span><br><span class="line"><span class="string">&quot;math.pi * 5**2&quot;</span>          → <span class="number">78.5398</span>...</span><br><span class="line"><span class="string">&quot;abs(-42)&quot;</span>                 → <span class="number">42</span></span><br><span class="line"><span class="string">&quot;round(3.14159, 2)&quot;</span>       → <span class="number">3.14</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ❌ 被阻止的操作（__builtins__ 被清空）</span></span><br><span class="line"><span class="string">&quot;__import__(&#x27;os&#x27;)&quot;</span>         → NameError</span><br><span class="line"><span class="string">&quot;exec(&#x27;...&#x27;)&quot;</span>              → NameError</span><br><span class="line"><span class="string">&quot;open(&#x27;/etc/passwd&#x27;)&quot;</span>      → NameError</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="3-4-工具三：时间查询"><a href="#3-4-工具三：时间查询" class="headerlink" title="3.4 工具三：时间查询"></a>3.4 工具三：时间查询</h3><p>引入双模式设计 — 根据参数内容走不同的逻辑分支。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_time_info</span>(<span class="params">query: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    时间查询工具，支持获取当前时间和日期计算</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        query (str): 查询类型，&quot;now&quot; 获取当前时间，数字表示天数偏移如 &quot;3&quot; 表示3天后，&quot;-7&quot; 表示7天前</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 时间信息字符串</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    now = datetime.now()</span><br><span class="line">    weekdays = [<span class="string">&#x27;一&#x27;</span>, <span class="string">&#x27;二&#x27;</span>, <span class="string">&#x27;三&#x27;</span>, <span class="string">&#x27;四&#x27;</span>, <span class="string">&#x27;五&#x27;</span>, <span class="string">&#x27;六&#x27;</span>, <span class="string">&#x27;日&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> query.strip().lower() == <span class="string">&quot;now&quot;</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;当前时间：<span class="subst">&#123;now.strftime(<span class="string">&#x27;%Y年%m月%d日 %H:%M:%S&#x27;</span>)&#125;</span>，星期<span class="subst">&#123;weekdays[now.weekday()]&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        days = <span class="built_in">int</span>(query.strip())</span><br><span class="line">        target = now + timedelta(days=days)</span><br><span class="line">        <span class="keyword">if</span> days &gt; <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="string">f&quot;<span class="subst">&#123;days&#125;</span>天后是：<span class="subst">&#123;target.strftime(<span class="string">&#x27;%Y年%m月%d日&#x27;</span>)&#125;</span>，星期<span class="subst">&#123;weekdays[target.weekday()]&#125;</span>&quot;</span></span><br><span class="line">        <span class="keyword">elif</span> days &lt; <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="string">f&quot;<span class="subst">&#123;<span class="built_in">abs</span>(days)&#125;</span>天前是：<span class="subst">&#123;target.strftime(<span class="string">&#x27;%Y年%m月%d日&#x27;</span>)&#125;</span>，星期<span class="subst">&#123;weekdays[target.weekday()]&#125;</span>&quot;</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="string">f&quot;今天：<span class="subst">&#123;target.strftime(<span class="string">&#x27;%Y年%m月%d日&#x27;</span>)&#125;</span>，星期<span class="subst">&#123;weekdays[target.weekday()]&#125;</span>&quot;</span></span><br><span class="line">    <span class="keyword">except</span> ValueError:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;当前时间：<span class="subst">&#123;now.strftime(<span class="string">&#x27;%Y年%m月%d日 %H:%M:%S&#x27;</span>)&#125;</span>，星期<span class="subst">&#123;weekdays[now.weekday()]&#125;</span>&quot;</span></span><br></pre></td></tr></table></figure>
+
+<p><strong>设计要点</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>要点</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>双模式</td>
+<td><code>&quot;now&quot;</code> 获取当前时间；数字字符串进行日期偏移计算</td>
+</tr>
+<tr>
+<td>中文星期</td>
+<td><code>weekdays</code> 列表将 <code>weekday()</code> 返回的数字（0-6）转为中文</td>
+</tr>
+<tr>
+<td>正负偏移</td>
+<td>正数 &#x3D; 未来，负数 &#x3D; 过去，0 &#x3D; 今天</td>
+</tr>
+<tr>
+<td>容错处理</td>
+<td><code>ValueError</code> 捕获非法输入，默认返回当前时间</td>
+</tr>
+</tbody></table>
+<p><strong>日期计算核心</strong>：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">from</span> datetime <span class="keyword">import</span> datetime, timedelta</span><br><span class="line"></span><br><span class="line">now = datetime.now()</span><br><span class="line">target = now + timedelta(days=<span class="number">3</span>)     <span class="comment"># 3天后</span></span><br><span class="line">target = now + timedelta(days=-<span class="number">7</span>)    <span class="comment"># 7天前</span></span><br><span class="line">target.strftime(<span class="string">&#x27;%Y年%m月%d日&#x27;</span>)       <span class="comment"># &quot;2026年08月31日&quot;</span></span><br></pre></td></tr></table></figure>
+
+<hr>
+<h3 id="3-5-工具四：货币转换"><a href="#3-5-工具四：货币转换" class="headerlink" title="3.5 工具四：货币转换"></a>3.5 工具四：货币转换</h3><p>引入多参数设计 — 模型需要同时正确推断多个参数的类型和值。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">convert_currency</span>(<span class="params">amount: <span class="built_in">float</span>, from_currency: <span class="built_in">str</span>, to_currency: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    货币转换工具，支持多种货币之间的汇率转换</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        amount (float): 转换金额</span></span><br><span class="line"><span class="string">        from_currency (str): 源货币代码，如 &quot;CNY&quot;、&quot;USD&quot;、&quot;EUR&quot;、&quot;JPY&quot;、&quot;GBP&quot;</span></span><br><span class="line"><span class="string">        to_currency (str): 目标货币代码，如 &quot;CNY&quot;、&quot;USD&quot;、&quot;EUR&quot;、&quot;JPY&quot;、&quot;GBP&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 转换结果字符串</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    rates_to_usd = &#123;</span><br><span class="line">        <span class="string">&quot;CNY&quot;</span>: <span class="number">7.25</span>,</span><br><span class="line">        <span class="string">&quot;USD&quot;</span>: <span class="number">1.0</span>,</span><br><span class="line">        <span class="string">&quot;EUR&quot;</span>: <span class="number">0.92</span>,</span><br><span class="line">        <span class="string">&quot;JPY&quot;</span>: <span class="number">157.0</span>,</span><br><span class="line">        <span class="string">&quot;GBP&quot;</span>: <span class="number">0.79</span>,</span><br><span class="line">        <span class="string">&quot;KRW&quot;</span>: <span class="number">1380.0</span>,</span><br><span class="line">        <span class="string">&quot;HKD&quot;</span>: <span class="number">7.80</span>,</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    from_upper = from_currency.upper()</span><br><span class="line">    to_upper = to_currency.upper()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> from_upper <span class="keyword">not</span> <span class="keyword">in</span> rates_to_usd:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;不支持的货币：<span class="subst">&#123;from_currency&#125;</span>，支持：<span class="subst">&#123;<span class="string">&#x27;, &#x27;</span>.join(rates_to_usd.keys())&#125;</span>&quot;</span></span><br><span class="line">    <span class="keyword">if</span> to_upper <span class="keyword">not</span> <span class="keyword">in</span> rates_to_usd:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;不支持的货币：<span class="subst">&#123;to_currency&#125;</span>，支持：<span class="subst">&#123;<span class="string">&#x27;, &#x27;</span>.join(rates_to_usd.keys())&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="comment"># 先转为 USD，再转为目标货币</span></span><br><span class="line">    usd_amount = amount / rates_to_usd[from_upper]</span><br><span class="line">    result = usd_amount * rates_to_usd[to_upper]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;<span class="subst">&#123;amount&#125;</span> <span class="subst">&#123;from_upper&#125;</span> = <span class="subst">&#123;result:<span class="number">.2</span>f&#125;</span> <span class="subst">&#123;to_upper&#125;</span>（汇率：1 <span class="subst">&#123;from_upper&#125;</span> = <span class="subst">&#123;rates_to_usd[to_upper] / rates_to_usd[from_upper]:<span class="number">.4</span>f&#125;</span> <span class="subst">&#123;to_upper&#125;</span>）&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="USD-中转法"><a href="#USD-中转法" class="headerlink" title="USD 中转法"></a>USD 中转法</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">CNY → USD → JPY</span><br><span class="line"></span><br><span class="line">步骤1: USD金额 = CNY金额 / CNY对USD汇率</span><br><span class="line">步骤2: JPY金额 = USD金额 × USD对JPY汇率</span><br></pre></td></tr></table></figure>
+
+<p>只需维护一张「各货币对 USD」的汇率表，就能实现任意两种货币之间的转换。</p>
+<h4 id="多参数工具的特点"><a href="#多参数工具的特点" class="headerlink" title="多参数工具的特点"></a>多参数工具的特点</h4><table>
+<thead>
+<tr>
+<th>要点</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>三个参数</td>
+<td><code>amount</code>（金额）、<code>from_currency</code>（源货币）、<code>to_currency</code>（目标货币）</td>
+</tr>
+<tr>
+<td>混合类型</td>
+<td>同时包含 <code>float</code> 和 <code>str</code>，模型需要正确推断每个参数的类型</td>
+</tr>
+<tr>
+<td>大小写容错</td>
+<td><code>.upper()</code> 统一转换，<code>&quot;cny&quot;</code> 和 <code>&quot;CNY&quot;</code> 都能正确处理</td>
+</tr>
+<tr>
+<td>非法检测</td>
+<td>不支持的货币返回友好错误信息和可用货币列表</td>
+</tr>
+</tbody></table>
+<p><strong>输出格式</strong>：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">5000 CNY = 107586.21 JPY（汇率：1 CNY = 21.6552 JPY）</span><br></pre></td></tr></table></figure>
+
+<p>包含：原始金额、转换结果（2位小数）、汇率信息（4位小数）。</p>
+<hr>
+<h3 id="3-6-工具五：信息搜索"><a href="#3-6-工具五：信息搜索" class="headerlink" title="3.6 工具五：信息搜索"></a>3.6 工具五：信息搜索</h3><p>引入模糊匹配 — 不要求精确匹配，提高搜索的容错性。</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search_info</span>(<span class="params">keyword: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    信息搜索工具，搜索产品、新闻等信息</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        keyword (str): 搜索关键词</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 搜索结果字符串</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    knowledge_base = &#123;</span><br><span class="line">        <span class="string">&quot;iphone&quot;</span>: <span class="string">&quot;iPhone 16 Pro：A18 Pro芯片，6.3英寸超视网膜XDR显示屏，4800万像素融合摄像头，起售价7999元&quot;</span>,</span><br><span class="line">        <span class="string">&quot;华为&quot;</span>: <span class="string">&quot;华为 Mate 70 Pro：麒麟9020芯片，6.82英寸OLED屏幕，5000万像素超感知影像系统，起售价6499元&quot;</span>,</span><br><span class="line">        <span class="string">&quot;特斯拉&quot;</span>: <span class="string">&quot;特斯拉 Model 3 焕新版：续航里程606km，0-100km/h加速6.1秒，起售价23.19万元&quot;</span>,</span><br><span class="line">        <span class="string">&quot;ai&quot;</span>: <span class="string">&quot;2026年AI最新动态：GPT-5发布，多模态能力大幅提升；国内大模型百花齐放，DeepSeek、通义千问持续迭代&quot;</span>,</span><br><span class="line">        <span class="string">&quot;诺贝尔&quot;</span>: <span class="string">&quot;2024年诺贝尔物理学奖授予John J. Hopfield和Geoffrey E. Hinton，表彰他们在人工神经网络方面的基础性贡献&quot;</span>,</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    results = []</span><br><span class="line">    <span class="keyword">for</span> key, value <span class="keyword">in</span> knowledge_base.items():</span><br><span class="line">        <span class="keyword">if</span> keyword.lower() <span class="keyword">in</span> key.lower() <span class="keyword">or</span> key.lower() <span class="keyword">in</span> keyword.lower():</span><br><span class="line">            results.append(value)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> results:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;\n&quot;</span>.join(results)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;未找到与 &#x27;<span class="subst">&#123;keyword&#125;</span>&#x27; 相关的信息，请尝试其他关键词&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h4 id="双向模糊匹配"><a href="#双向模糊匹配" class="headerlink" title="双向模糊匹配"></a>双向模糊匹配</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 双向包含匹配</span></span><br><span class="line">keyword.lower() <span class="keyword">in</span> key.lower()   <span class="comment"># 关键词包含在键中</span></span><br><span class="line">key.lower() <span class="keyword">in</span> keyword.lower()   <span class="comment"># 键包含在关键词中</span></span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>用户输入</th>
+<th>匹配逻辑</th>
+<th>结果</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&quot;iphone&quot;</code></td>
+<td><code>&quot;iphone&quot; in &quot;iphone&quot;</code></td>
+<td>匹配成功</td>
+</tr>
+<tr>
+<td><code>&quot;最新iPhone手机&quot;</code></td>
+<td><code>&quot;iphone&quot; in &quot;最新iphone手机&quot;</code></td>
+<td>匹配成功（键包含在关键词中）</td>
+</tr>
+<tr>
+<td><code>&quot;苹果手机&quot;</code></td>
+<td>无匹配</td>
+<td>返回未找到</td>
+</tr>
+<tr>
+<td><code>&quot;AI&quot;</code></td>
+<td><code>&quot;ai&quot; in &quot;ai&quot;</code></td>
+<td>匹配成功</td>
+</tr>
+</tbody></table>
+<hr>
+<h3 id="3-7-工具设计进阶总结"><a href="#3-7-工具设计进阶总结" class="headerlink" title="3.7 工具设计进阶总结"></a>3.7 工具设计进阶总结</h3><p>回顾五个工具的设计演进：</p>
+<table>
+<thead>
+<tr>
+<th>工具</th>
+<th>参数数量</th>
+<th>核心设计</th>
+<th>进阶点</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>get_weather</code></td>
+<td>1 个</td>
+<td>字典查询 + 默认值</td>
+<td>最简单的工具形式</td>
+</tr>
+<tr>
+<td><code>calculator</code></td>
+<td>1 个</td>
+<td>eval + 白名单</td>
+<td>安全性设计</td>
+</tr>
+<tr>
+<td><code>get_time_info</code></td>
+<td>1 个</td>
+<td>双模式分支</td>
+<td>条件路由 + 容错</td>
+</tr>
+<tr>
+<td><code>convert_currency</code></td>
+<td>3 个</td>
+<td>USD 中转法</td>
+<td>多参数 + 混合类型</td>
+</tr>
+<tr>
+<td><code>search_info</code></td>
+<td>1 个</td>
+<td>双向模糊匹配</td>
+<td>模糊搜索 + 多结果</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="四、第二阶段-—-创建-Agent-并测试"><a href="#四、第二阶段-—-创建-Agent-并测试" class="headerlink" title="四、第二阶段 — 创建 Agent 并测试"></a>四、第二阶段 — 创建 Agent 并测试</h2><p>工具定义完成后，需要创建 Agent 来「编排」这些工具，让大模型自动决定何时调用哪个工具。</p>
+<h3 id="4-1-创建-Agent"><a href="#4-1-创建-Agent" class="headerlink" title="4.1 创建 Agent"></a>4.1 创建 Agent</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><span class="line">agent = create_agent(</span><br><span class="line">    model=model,</span><br><span class="line">    system_prompt=SystemMessage(content=<span class="string">&quot;&quot;&quot;你是一个多功能智能助手，能够帮助用户完成以下任务：</span></span><br><span class="line"><span class="string">1. 天气查询：查询各城市的天气情况</span></span><br><span class="line"><span class="string">2. 数学计算：执行各种数学运算</span></span><br><span class="line"><span class="string">3. 时间查询：获取当前时间、计算日期</span></span><br><span class="line"><span class="string">4. 货币转换：多种货币之间的汇率转换</span></span><br><span class="line"><span class="string">5. 信息搜索：搜索产品、新闻等信息</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">请根据用户的问题，选择合适的工具来回答。如果问题涉及多个方面，可以组合使用多个工具。&quot;&quot;&quot;</span>),</span><br><span class="line">    tools=[get_weather, calculator, get_time_info, convert_currency, search_info],</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h4 id="create-agent-参数说明"><a href="#create-agent-参数说明" class="headerlink" title="create_agent 参数说明"></a><code>create_agent</code> 参数说明</h4><table>
+<thead>
+<tr>
+<th>参数</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>model</code></td>
+<td><code>BaseChatModel</code></td>
+<td>聊天模型实例</td>
+</tr>
+<tr>
+<td><code>tools</code></td>
+<td><code>list[BaseTool]</code></td>
+<td>工具列表，Agent 可以调用的所有工具</td>
+</tr>
+<tr>
+<td><code>system_prompt</code></td>
+<td><code>SystemMessage</code></td>
+<td>系统提示词，定义 Agent 的角色和行为规范</td>
+</tr>
+</tbody></table>
+<h4 id="SystemMessage-的三重作用"><a href="#SystemMessage-的三重作用" class="headerlink" title="SystemMessage 的三重作用"></a><code>SystemMessage</code> 的三重作用</h4><ol>
+<li><strong>你是谁</strong> — 多功能智能助手</li>
+<li><strong>你能做什么</strong> — 列出五大功能</li>
+<li><strong>怎么做</strong> — 根据问题选择工具，支持组合使用</li>
+</ol>
+<h3 id="4-2-agent-invoke-调用规范"><a href="#4-2-agent-invoke-调用规范" class="headerlink" title="4.2 agent.invoke() 调用规范"></a>4.2 <code>agent.invoke()</code> 调用规范</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">result = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [</span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;北京今天天气怎么样？&quot;</span>&#125;</span><br><span class="line">    ]</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>要点</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>输入格式</td>
+<td>字典，key 必须是 <code>&quot;messages&quot;</code>（注意是复数，不是 <code>&quot;message&quot;</code>）</td>
+</tr>
+<tr>
+<td>messages 格式</td>
+<td>列表，每个元素是 <code>&#123;&quot;role&quot;: &quot;user&quot;, &quot;content&quot;: &quot;...&quot;&#125;</code></td>
+</tr>
+<tr>
+<td>返回值</td>
+<td>字典，包含完整的消息链</td>
+</tr>
+<tr>
+<td>获取回答</td>
+<td><code>result[&quot;messages&quot;][-1].content</code> 取最后一条消息</td>
+</tr>
+</tbody></table>
+<h4 id="消息链结构"><a href="#消息链结构" class="headerlink" title="消息链结构"></a>消息链结构</h4><p>一次典型的 <code>invoke</code> 调用后，<code>result[&quot;messages&quot;]</code> 包含完整的消息链：</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">messages[0]: SystemMessage       — 系统提示词（自动注入）</span><br><span class="line">messages[1]: HumanMessage        — 用户输入</span><br><span class="line">messages[2]: AIMessage           — AI 决定调用工具（包含 tool_calls）</span><br><span class="line">messages[3]: ToolMessage         — 工具返回结果</span><br><span class="line">messages[4]: AIMessage           — AI 最终回答</span><br></pre></td></tr></table></figure>
+
+<p>如果调用了多个工具，中间会有多组 <code>AIMessage(tool_calls)</code> + <code>ToolMessage</code> 对。</p>
+<h3 id="4-3-测试用例"><a href="#4-3-测试用例" class="headerlink" title="4.3 测试用例"></a>4.3 测试用例</h3><h4 id="测试-1：天气查询（单工具调用）"><a href="#测试-1：天气查询（单工具调用）" class="headerlink" title="测试 1：天气查询（单工具调用）"></a>测试 1：天气查询（单工具调用）</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">response = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;北京今天天气怎么样？&quot;</span>&#125;]</span><br><span class="line">&#125;)</span><br><span class="line">rprint(response[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content)</span><br></pre></td></tr></table></figure>
+
+<p><strong>调用流程</strong>：用户提问 → Agent 判断需要 <code>get_weather</code> → 调用工具 → 获取天气数据 → 生成回答</p>
+<h4 id="测试-2：数学计算（自然语言转表达式）"><a href="#测试-2：数学计算（自然语言转表达式）" class="headerlink" title="测试 2：数学计算（自然语言转表达式）"></a>测试 2：数学计算（自然语言转表达式）</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">response = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;帮我计算一下 2的20次方 加上 圆周率乘以半径5的圆面积&quot;</span>&#125;]</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p><strong>调用流程</strong>：用户提问 → Agent 拆解为两个计算任务 → 分别调用 <code>calculator</code> → 合并结果</p>
+<h4 id="测试-3：时间查询（双问题）"><a href="#测试-3：时间查询（双问题）" class="headerlink" title="测试 3：时间查询（双问题）"></a>测试 3：时间查询（双问题）</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">response = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;现在几点了？30天后是几月几号？&quot;</span>&#125;]</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p><strong>调用流程</strong>：Agent 识别两个子问题 → 分别调用 <code>get_time_info</code>（”now” 和 “30”）→ 合并回答</p>
+<h4 id="测试-4：货币转换（双转换）"><a href="#测试-4：货币转换（双转换）" class="headerlink" title="测试 4：货币转换（双转换）"></a>测试 4：货币转换（双转换）</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">response = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;5000人民币能换多少美元？1000日元等于多少人民币？&quot;</span>&#125;]</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<h4 id="测试-5：信息搜索（模糊匹配）"><a href="#测试-5：信息搜索（模糊匹配）" class="headerlink" title="测试 5：信息搜索（模糊匹配）"></a>测试 5：信息搜索（模糊匹配）</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">response = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;帮我查一下最新的iPhone和华为手机的信息&quot;</span>&#125;]</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<h4 id="测试-6：综合查询（多工具组合）"><a href="#测试-6：综合查询（多工具组合）" class="headerlink" title="测试 6：综合查询（多工具组合）"></a>测试 6：综合查询（多工具组合）</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line">response = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;我明天要去上海出差，帮我查下上海天气，另外5000人民币换成日元能换多少？&quot;</span>&#125;]</span><br><span class="line">&#125;)</span><br></pre></td></tr></table></figure>
+
+<p><strong>调用流程</strong>：Agent 识别两个需求 → 调用 <code>get_weather(&quot;上海&quot;)</code> + <code>convert_currency(5000, &quot;CNY&quot;, &quot;JPY&quot;)</code> → 合并回答</p>
+<h3 id="4-4-过程式的特点"><a href="#4-4-过程式的特点" class="headerlink" title="4.4 过程式的特点"></a>4.4 过程式的特点</h3><p>到此为止，我们实现了一个 <strong>过程式</strong> 的 Agent 应用：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 全局创建 Agent</span></span><br><span class="line">agent = create_agent(model=model, tools=[...], system_prompt=...)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 直接调用</span></span><br><span class="line">response = agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: [...]&#125;)</span><br><span class="line">rprint(response[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 再次调用（独立，无上下文）</span></span><br><span class="line">response = agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: [...]&#125;)</span><br><span class="line">rprint(response[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content)</span><br></pre></td></tr></table></figure>
+
+<p><strong>优点</strong>：简单直接，适合测试和演示</p>
+<p><strong>不足</strong>：</p>
+<ul>
+<li>每次调用都是独立的，没有上下文记忆</li>
+<li>不支持多轮对话（问”那上海呢？”Agent 不知道你在问天气）</li>
+<li>不可复用，修改需要改源码</li>
+</ul>
+<hr>
+<h2 id="五、第三阶段-—-面向对象封装与交互式问答"><a href="#五、第三阶段-—-面向对象封装与交互式问答" class="headerlink" title="五、第三阶段 — 面向对象封装与交互式问答"></a>五、第三阶段 — 面向对象封装与交互式问答</h2><p>为了解决过程式的不足，我们将 Agent 封装为一个类，并在此基础上构建交互式问答系统。</p>
+<h3 id="5-1-SmartAssistant-类"><a href="#5-1-SmartAssistant-类" class="headerlink" title="5.1 SmartAssistant 类"></a>5.1 SmartAssistant 类</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">class</span> <span class="title class_">SmartAssistant</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;多功能智能助手&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="comment"># 初始化模型</span></span><br><span class="line">        <span class="variable language_">self</span>.model = model</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 工具列表</span></span><br><span class="line">        <span class="variable language_">self</span>.tools = [</span><br><span class="line">            get_weather,</span><br><span class="line">            calculator,</span><br><span class="line">            get_time_info,</span><br><span class="line">            convert_currency,</span><br><span class="line">            search_info</span><br><span class="line">        ]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 系统提示词</span></span><br><span class="line">        system_prompt = <span class="string">&quot;&quot;&quot;你是一个多功能智能助手，可以帮助用户：</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">🌤️ 查询天气：使用 get_weather 工具</span></span><br><span class="line"><span class="string">🧮 数学计算：使用 calculator 工具</span></span><br><span class="line"><span class="string">⏰ 时间查询：使用 get_time_info 工具</span></span><br><span class="line"><span class="string">💱 货币转换：使用 convert_currency 工具</span></span><br><span class="line"><span class="string">🔍 信息搜索：使用 search_info 工具</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">请根据用户的问题，选择合适的工具来回答。如果问题涉及多个方面，可以组合使用多个工具。&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 初始化 Agent</span></span><br><span class="line">        <span class="variable language_">self</span>.agent = create_agent(</span><br><span class="line">            model=<span class="variable language_">self</span>.model,</span><br><span class="line">            tools=<span class="variable language_">self</span>.tools,</span><br><span class="line">            system_prompt=system_prompt</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 对话历史</span></span><br><span class="line">        <span class="variable language_">self</span>.messages = []</span><br></pre></td></tr></table></figure>
+
+<h4 id="属性说明"><a href="#属性说明" class="headerlink" title="属性说明"></a>属性说明</h4><table>
+<thead>
+<tr>
+<th>属性</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>self.model</code></td>
+<td><code>BaseChatModel</code></td>
+<td>聊天模型实例</td>
+</tr>
+<tr>
+<td><code>self.tools</code></td>
+<td><code>list</code></td>
+<td>5 个工具函数的列表</td>
+</tr>
+<tr>
+<td><code>self.agent</code></td>
+<td><code>CompiledGraph</code></td>
+<td><code>create_agent</code> 返回的 Agent 实例</td>
+</tr>
+<tr>
+<td><code>self.messages</code></td>
+<td><code>list</code></td>
+<td>对话历史消息列表，<strong>支持多轮对话的关键</strong></td>
+</tr>
+</tbody></table>
+<h3 id="5-2-chat-方法-—-多轮对话的核心"><a href="#5-2-chat-方法-—-多轮对话的核心" class="headerlink" title="5.2 chat() 方法 — 多轮对话的核心"></a>5.2 <code>chat()</code> 方法 — 多轮对话的核心</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">chat</span>(<span class="params">self, user_input: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;对话接口&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 添加用户消息</span></span><br><span class="line">    <span class="variable language_">self</span>.messages.append(&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: user_input&#125;)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 调用 agent</span></span><br><span class="line">    result = <span class="variable language_">self</span>.agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="variable language_">self</span>.messages&#125;)</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 更新消息历史</span></span><br><span class="line">    <span class="variable language_">self</span>.messages = result[<span class="string">&quot;messages&quot;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="comment"># 返回最后一条 AI 消息</span></span><br><span class="line">    <span class="keyword">return</span> result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content</span><br></pre></td></tr></table></figure>
+
+<h4 id="多轮对话如何工作？"><a href="#多轮对话如何工作？" class="headerlink" title="多轮对话如何工作？"></a>多轮对话如何工作？</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">第1轮对话：</span><br><span class="line">  self.messages = [HumanMessage(&quot;北京天气怎么样？&quot;)]</span><br><span class="line">  → invoke → Agent 调用工具 → 返回回答</span><br><span class="line">  → self.messages 更新为完整消息链（5条消息）</span><br><span class="line"></span><br><span class="line">第2轮对话：</span><br><span class="line">  self.messages = [之前的5条消息] + [HumanMessage(&quot;那上海呢？&quot;)]</span><br><span class="line">  → invoke → Agent 看到完整上下文 → 理解&quot;那上海呢&quot;是在问天气</span><br><span class="line">  → 返回回答</span><br></pre></td></tr></table></figure>
+
+<p><strong>关键点</strong>：每次 <code>invoke</code> 后，<code>self.messages</code> 被更新为完整的消息链（包含系统消息、工具调用、工具结果等），这样下一轮对话时 Agent 能看到所有历史上下文。</p>
+<h4 id="为什么用整体替换而不是追加？"><a href="#为什么用整体替换而不是追加？" class="headerlink" title="为什么用整体替换而不是追加？"></a>为什么用整体替换而不是追加？</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># ✅ 采用：整体替换</span></span><br><span class="line"><span class="variable language_">self</span>.messages = result[<span class="string">&quot;messages&quot;</span>]</span><br><span class="line"><span class="comment"># result[&quot;messages&quot;] 包含所有消息（系统消息 + 历史 + 新消息 + 工具调用 + AI回答）</span></span><br><span class="line"><span class="comment"># 直接替换确保消息链完整且一致</span></span><br><span class="line"></span><br><span class="line"><span class="comment"># ❌ 不推荐：手动追加</span></span><br><span class="line"><span class="variable language_">self</span>.messages.append(result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>])</span><br><span class="line"><span class="comment"># 容易遗漏中间的工具调用消息，导致消息链不完整，下次 invoke 会报错</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="5-3-reset-方法-—-重置对话"><a href="#5-3-reset-方法-—-重置对话" class="headerlink" title="5.3 reset() 方法 — 重置对话"></a>5.3 <code>reset()</code> 方法 — 重置对话</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">reset</span>(<span class="params">self</span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;重置对话历史&quot;&quot;&quot;</span></span><br><span class="line">    <span class="variable language_">self</span>.messages = []</span><br></pre></td></tr></table></figure>
+
+<p>清空消息列表，下次 <code>chat()</code> 调用时从零开始，Agent 不再有之前的上下文记忆。</p>
+<h3 id="5-4-交互式问答主循环"><a href="#5-4-交互式问答主循环" class="headerlink" title="5.4 交互式问答主循环"></a>5.4 交互式问答主循环</h3><p>有了 <code>SmartAssistant</code> 类，就可以构建一个终端交互式问答系统：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;交互式问答主循环&quot;&quot;&quot;</span></span><br><span class="line">    assistant = SmartAssistant()</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;=&quot;</span> * <span class="number">60</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;🤖 多功能智能助手&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;=&quot;</span> * <span class="number">60</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;支持功能：天气查询 | 数学计算 | 时间查询 | 货币转换 | 信息搜索&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;输入 &#x27;quit&#x27; 或 &#x27;exit&#x27; 退出&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;输入 &#x27;reset&#x27; 清空对话历史&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;=&quot;</span> * <span class="number">60</span>)</span><br><span class="line">    <span class="built_in">print</span>()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            user_input = <span class="built_in">input</span>(<span class="string">&quot;🧑 你：&quot;</span>).strip()</span><br><span class="line">        <span class="keyword">except</span> (EOFError, KeyboardInterrupt):</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;\n再见！&quot;</span>)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> user_input:</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> user_input.lower() <span class="keyword">in</span> (<span class="string">&quot;quit&quot;</span>, <span class="string">&quot;exit&quot;</span>):</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;🤖 助手：再见！有需要随时找我～&quot;</span>)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> user_input.lower() == <span class="string">&quot;reset&quot;</span>:</span><br><span class="line">            assistant.reset()</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;🤖 助手：对话历史已清空，我们重新开始吧！\n&quot;</span>)</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        <span class="built_in">print</span>()</span><br><span class="line">        response = assistant.chat(user_input)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;🤖 助手：<span class="subst">&#123;response&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+
+<h4 id="主循环流程"><a href="#主循环流程" class="headerlink" title="主循环流程"></a>主循环流程</h4><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br></pre></td><td class="code"><pre><span class="line">┌─────────────────────────────────┐</span><br><span class="line">│         程序启动                  │</span><br><span class="line">│    创建 SmartAssistant 实例       │</span><br><span class="line">└─────────────┬───────────────────┘</span><br><span class="line">              │</span><br><span class="line">              ▼</span><br><span class="line">┌─────────────────────────────────┐</span><br><span class="line">│     等待用户输入 (input)          │</span><br><span class="line">└─────────────┬───────────────────┘</span><br><span class="line">              │</span><br><span class="line">              ▼</span><br><span class="line">┌─────── 输入判断 ────────────────┐</span><br><span class="line">│                                  │</span><br><span class="line">│  空输入 → continue（跳过）        │</span><br><span class="line">│  quit/exit → 退出程序            │</span><br><span class="line">│  reset → 清空历史，continue      │</span><br><span class="line">│  其他 → 调用 chat()，显示回答     │</span><br><span class="line">│                                  │</span><br><span class="line">└─────────────┬───────────────────┘</span><br><span class="line">              │</span><br><span class="line">              ▼</span><br><span class="line">        回到等待输入</span><br></pre></td></tr></table></figure>
+
+<h4 id="特殊命令"><a href="#特殊命令" class="headerlink" title="特殊命令"></a>特殊命令</h4><table>
+<thead>
+<tr>
+<th>命令</th>
+<th>功能</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>quit</code> &#x2F; <code>exit</code></td>
+<td>退出程序</td>
+<td>不区分大小写</td>
+</tr>
+<tr>
+<td><code>reset</code></td>
+<td>清空对话历史</td>
+<td>重新开始对话，Agent 失去上下文</td>
+</tr>
+<tr>
+<td>空输入</td>
+<td>跳过</td>
+<td><code>strip()</code> 后为空则 <code>continue</code></td>
+</tr>
+</tbody></table>
+<h4 id="异常处理"><a href="#异常处理" class="headerlink" title="异常处理"></a>异常处理</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">try</span>:</span><br><span class="line">    user_input = <span class="built_in">input</span>(<span class="string">&quot;🧑 你：&quot;</span>).strip()</span><br><span class="line"><span class="keyword">except</span> (EOFError, KeyboardInterrupt):</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;\n再见！&quot;</span>)</span><br><span class="line">    <span class="keyword">break</span></span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>异常</th>
+<th>触发场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>EOFError</code></td>
+<td>用户按下 <code>Ctrl+D</code>（文件结束符）</td>
+</tr>
+<tr>
+<td><code>KeyboardInterrupt</code></td>
+<td>用户按下 <code>Ctrl+C</code>（中断信号）</td>
+</tr>
+</tbody></table>
+<p>确保程序在任何退出方式下都能优雅关闭。</p>
+<h4 id="入口保护"><a href="#入口保护" class="headerlink" title="入口保护"></a>入口保护</h4><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+
+<p>确保只有直接运行脚本时才执行 <code>main()</code>，被其他模块 <code>import</code> 时不会自动执行。</p>
+<hr>
+<h2 id="六、两种架构对比"><a href="#六、两种架构对比" class="headerlink" title="六、两种架构对比"></a>六、两种架构对比</h2><h3 id="6-1-代码结构对比"><a href="#6-1-代码结构对比" class="headerlink" title="6.1 代码结构对比"></a>6.1 代码结构对比</h3><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br></pre></td><td class="code"><pre><span class="line">过程式                                 面向对象 + 交互式</span><br><span class="line"></span><br><span class="line">model = init_chat_model(...)          model = init_chat_model(...)</span><br><span class="line">agent = create_agent(...)             </span><br><span class="line">                                      class SmartAssistant:</span><br><span class="line"># 直接调用                                def __init__(self):</span><br><span class="line">response = agent.invoke(...)                self.agent = create_agent(...)</span><br><span class="line">rprint(response[...])                       self.messages = []</span><br><span class="line">                                        </span><br><span class="line">response = agent.invoke(...)            def chat(self, text):</span><br><span class="line">rprint(response[...])                     ...</span><br><span class="line"></span><br><span class="line"># 每次独立调用                          def reset(self):</span><br><span class="line"># 没有上下文记忆                          ...</span><br><span class="line"></span><br><span class="line">                                      def main():</span><br><span class="line">                                          assistant = SmartAssistant()</span><br><span class="line">                                          while True:</span><br><span class="line">                                              text = input(...)</span><br><span class="line">                                              response = assistant.chat(text)</span><br></pre></td></tr></table></figure>
+
+<h3 id="6-2-功能对比"><a href="#6-2-功能对比" class="headerlink" title="6.2 功能对比"></a>6.2 功能对比</h3><table>
+<thead>
+<tr>
+<th>对比维度</th>
+<th>过程式</th>
+<th>面向对象 + 交互式</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>运行方式</td>
+<td>自动运行预设测试用例</td>
+<td>交互式问答，用户自由提问</td>
+</tr>
+<tr>
+<td>多轮对话</td>
+<td>不支持（每次独立调用）</td>
+<td>支持（<code>self.messages</code> 维护上下文）</td>
+</tr>
+<tr>
+<td>对话重置</td>
+<td>不支持</td>
+<td>支持 <code>reset</code> 命令</td>
+</tr>
+<tr>
+<td>优雅退出</td>
+<td>运行完自动结束</td>
+<td>支持 <code>quit</code>&#x2F;<code>exit</code>&#x2F;<code>Ctrl+C</code>&#x2F;<code>Ctrl+D</code></td>
+</tr>
+<tr>
+<td>可复用性</td>
+<td>低（脚本式）</td>
+<td>高（类封装，可导入使用）</td>
+</tr>
+<tr>
+<td>输出方式</td>
+<td><code>rprint</code>（富文本彩色）</td>
+<td><code>print</code>（普通文本）</td>
+</tr>
+</tbody></table>
+<h3 id="6-3-适用场景"><a href="#6-3-适用场景" class="headerlink" title="6.3 适用场景"></a>6.3 适用场景</h3><table>
+<thead>
+<tr>
+<th>架构</th>
+<th>适用场景</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>过程式</td>
+<td>演示、测试、验证工具是否正常工作</td>
+</tr>
+<tr>
+<td>面向对象 + 交互式</td>
+<td>实际使用、交互式体验、二次开发基础</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="七、核心知识点总结"><a href="#七、核心知识点总结" class="headerlink" title="七、核心知识点总结"></a>七、核心知识点总结</h2><h3 id="7-1-create-agent-完整参数"><a href="#7-1-create-agent-完整参数" class="headerlink" title="7.1 create_agent 完整参数"></a>7.1 <code>create_agent</code> 完整参数</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line">agent = create_agent(</span><br><span class="line">    model=model,                    <span class="comment"># 聊天模型</span></span><br><span class="line">    tools=[tool1, tool2, ...],      <span class="comment"># 工具列表</span></span><br><span class="line">    system_prompt=SystemMessage(    <span class="comment"># 系统提示词</span></span><br><span class="line">        content=<span class="string">&quot;你是一个...&quot;</span></span><br><span class="line">    ),</span><br><span class="line">)</span><br></pre></td></tr></table></figure>
+
+<h3 id="7-2-tool-装饰器完整用法"><a href="#7-2-tool-装饰器完整用法" class="headerlink" title="7.2 @tool 装饰器完整用法"></a>7.2 <code>@tool</code> 装饰器完整用法</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">my_tool</span>(<span class="params">param1: <span class="built_in">str</span>, param2: <span class="built_in">int</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    工具描述（模型看到的工具功能说明）</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        param1 (str): 参数1描述</span></span><br><span class="line"><span class="string">        param2 (int): 参数2描述</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 返回值描述</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">return</span> <span class="string">&quot;结果&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="7-3-agent-invoke-调用规范"><a href="#7-3-agent-invoke-调用规范" class="headerlink" title="7.3 agent.invoke() 调用规范"></a>7.3 <code>agent.invoke()</code> 调用规范</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 正确的调用方式</span></span><br><span class="line">result = agent.invoke(&#123;</span><br><span class="line">    <span class="string">&quot;messages&quot;</span>: [                          <span class="comment"># key 必须是 &quot;messages&quot;（复数）</span></span><br><span class="line">        &#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: <span class="string">&quot;...&quot;</span>&#125; <span class="comment"># 字典格式</span></span><br><span class="line">    ]</span><br><span class="line">&#125;)</span><br><span class="line"></span><br><span class="line"><span class="comment"># 获取回答</span></span><br><span class="line">answer = result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content    <span class="comment"># 最后一条消息的内容</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="7-4-多轮对话消息管理"><a href="#7-4-多轮对话消息管理" class="headerlink" title="7.4 多轮对话消息管理"></a>7.4 多轮对话消息管理</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 初始化</span></span><br><span class="line"><span class="variable language_">self</span>.messages = []</span><br><span class="line"></span><br><span class="line"><span class="comment"># 每轮对话</span></span><br><span class="line"><span class="variable language_">self</span>.messages.append(&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: user_input&#125;)</span><br><span class="line">result = <span class="variable language_">self</span>.agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="variable language_">self</span>.messages&#125;)</span><br><span class="line"><span class="variable language_">self</span>.messages = result[<span class="string">&quot;messages&quot;</span>]  <span class="comment"># 整体替换为完整消息链</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="7-5-工具设计最佳实践"><a href="#7-5-工具设计最佳实践" class="headerlink" title="7.5 工具设计最佳实践"></a>7.5 工具设计最佳实践</h3><table>
+<thead>
+<tr>
+<th>实践</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>详细的 docstring</td>
+<td>模型依赖工具描述来决定何时调用，描述越清晰，调用越准确</td>
+</tr>
+<tr>
+<td>明确的参数类型</td>
+<td>使用 Python 类型注解，帮助模型推断参数类型</td>
+</tr>
+<tr>
+<td>容错设计</td>
+<td>工具内部处理异常，返回友好的错误信息而非抛出异常</td>
+</tr>
+<tr>
+<td>示例引导</td>
+<td>在 docstring 中给出参数示例（如 <code>&quot;北京&quot;</code>、<code>&quot;2**10&quot;</code>）</td>
+</tr>
+<tr>
+<td>安全的 eval</td>
+<td>使用白名单 + 禁用内置函数，防止代码注入</td>
+</tr>
+</tbody></table>
+<hr>
+<h2 id="八、扩展建议"><a href="#八、扩展建议" class="headerlink" title="八、扩展建议"></a>八、扩展建议</h2><h3 id="8-1-增加更多工具"><a href="#8-1-增加更多工具" class="headerlink" title="8.1 增加更多工具"></a>8.1 增加更多工具</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">translate_text</span>(<span class="params">text: <span class="built_in">str</span>, target_lang: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;翻译文本到目标语言&quot;&quot;&quot;</span></span><br><span class="line">    <span class="comment"># 接入翻译 API</span></span><br><span class="line">    ...</span><br><span class="line"></span><br><span class="line"><span class="comment"># 添加到工具列表</span></span><br><span class="line"><span class="variable language_">self</span>.tools = [..., translate_text]</span><br></pre></td></tr></table></figure>
+
+<h3 id="8-2-接入真实-API"><a href="#8-2-接入真实-API" class="headerlink" title="8.2 接入真实 API"></a>8.2 接入真实 API</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> requests</span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_weather_real</span>(<span class="params">city: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;查询城市天气（真实API版）&quot;&quot;&quot;</span></span><br><span class="line">    api_key = os.getenv(<span class="string">&quot;WEATHER_API_KEY&quot;</span>)</span><br><span class="line">    url = <span class="string">f&quot;https://api.weatherapi.com/v1/current.json?key=<span class="subst">&#123;api_key&#125;</span>&amp;q=<span class="subst">&#123;city&#125;</span>&amp;lang=zh&quot;</span></span><br><span class="line">    resp = requests.get(url)</span><br><span class="line">    data = resp.json()</span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;<span class="subst">&#123;city&#125;</span>：<span class="subst">&#123;data[<span class="string">&#x27;current&#x27;</span>][<span class="string">&#x27;condition&#x27;</span>][<span class="string">&#x27;text&#x27;</span>]&#125;</span>，温度<span class="subst">&#123;data[<span class="string">&#x27;current&#x27;</span>][<span class="string">&#x27;temp_c&#x27;</span>]&#125;</span>°C&quot;</span></span><br></pre></td></tr></table></figure>
+
+<h3 id="8-3-流式输出"><a href="#8-3-流式输出" class="headerlink" title="8.3 流式输出"></a>8.3 流式输出</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment"># 使用 stream 替代 invoke，实现打字机效果</span></span><br><span class="line"><span class="keyword">for</span> chunk <span class="keyword">in</span> <span class="variable language_">self</span>.agent.stream(</span><br><span class="line">    &#123;<span class="string">&quot;messages&quot;</span>: <span class="variable language_">self</span>.messages&#125;,</span><br><span class="line">    stream_mode=<span class="string">&quot;messages&quot;</span></span><br><span class="line">):</span><br><span class="line">    <span class="keyword">if</span> chunk[<span class="number">0</span>].content:</span><br><span class="line">        <span class="built_in">print</span>(chunk[<span class="number">0</span>].content, end=<span class="string">&quot;&quot;</span>, flush=<span class="literal">True</span>)</span><br></pre></td></tr></table></figure>
+
+<h3 id="8-4-持久化对话历史"><a href="#8-4-持久化对话历史" class="headerlink" title="8.4 持久化对话历史"></a>8.4 持久化对话历史</h3><figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> json</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">save_history</span>(<span class="params">self, filepath=<span class="string">&quot;history.json&quot;</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;保存对话历史到文件&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(filepath, <span class="string">&quot;w&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        json.dump(</span><br><span class="line">            [&#123;<span class="string">&quot;role&quot;</span>: m.<span class="built_in">type</span>, <span class="string">&quot;content&quot;</span>: m.content&#125; <span class="keyword">for</span> m <span class="keyword">in</span> <span class="variable language_">self</span>.messages],</span><br><span class="line">            f, ensure_ascii=<span class="literal">False</span></span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">load_history</span>(<span class="params">self, filepath=<span class="string">&quot;history.json&quot;</span></span>):</span><br><span class="line">    <span class="string">&quot;&quot;&quot;从文件加载对话历史&quot;&quot;&quot;</span></span><br><span class="line">    <span class="keyword">with</span> <span class="built_in">open</span>(filepath, <span class="string">&quot;r&quot;</span>, encoding=<span class="string">&quot;utf-8&quot;</span>) <span class="keyword">as</span> f:</span><br><span class="line">        data = json.load(f)</span><br><span class="line">        <span class="variable language_">self</span>.messages = data</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="九、运行效果"><a href="#九、运行效果" class="headerlink" title="九、运行效果"></a>九、运行效果</h2><figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br></pre></td><td class="code"><pre><span class="line">============================================================</span><br><span class="line">🤖 多功能智能助手</span><br><span class="line">============================================================</span><br><span class="line">支持功能：天气查询 | 数学计算 | 时间查询 | 货币转换 | 信息搜索</span><br><span class="line">输入 &#x27;quit&#x27; 或 &#x27;exit&#x27; 退出</span><br><span class="line">输入 &#x27;reset&#x27; 清空对话历史</span><br><span class="line">============================================================</span><br><span class="line"></span><br><span class="line">🧑 你：北京天气怎么样？</span><br><span class="line"></span><br><span class="line">🤖 助手：北京今天是晴天，温度28°C，湿度45%，风力3级，天气不错！</span><br><span class="line"></span><br><span class="line">🧑 你：那上海呢？</span><br><span class="line"></span><br><span class="line">🤖 助手：上海今天是多云，温度26°C，湿度65%，风力2级。</span><br><span class="line"></span><br><span class="line">🧑 你：5000人民币能换多少日元？</span><br><span class="line"></span><br><span class="line">🤖 助手：5000 CNY = 107586.21 JPY（汇率：1 CNY = 21.6552 JPY）</span><br><span class="line"></span><br><span class="line">🧑 你：reset</span><br><span class="line">🤖 助手：对话历史已清空，我们重新开始吧！</span><br><span class="line"></span><br><span class="line">🧑 你：exit</span><br><span class="line">🤖 助手：再见！有需要随时找我～</span><br></pre></td></tr></table></figure>
+
+<hr>
+<h2 id="十、完整代码"><a href="#十、完整代码" class="headerlink" title="十、完整代码"></a>十、完整代码</h2><p>以下是完整的交互式智能助手代码，可以直接复制运行：</p>
+<figure class="highlight python"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br><span class="line">69</span><br><span class="line">70</span><br><span class="line">71</span><br><span class="line">72</span><br><span class="line">73</span><br><span class="line">74</span><br><span class="line">75</span><br><span class="line">76</span><br><span class="line">77</span><br><span class="line">78</span><br><span class="line">79</span><br><span class="line">80</span><br><span class="line">81</span><br><span class="line">82</span><br><span class="line">83</span><br><span class="line">84</span><br><span class="line">85</span><br><span class="line">86</span><br><span class="line">87</span><br><span class="line">88</span><br><span class="line">89</span><br><span class="line">90</span><br><span class="line">91</span><br><span class="line">92</span><br><span class="line">93</span><br><span class="line">94</span><br><span class="line">95</span><br><span class="line">96</span><br><span class="line">97</span><br><span class="line">98</span><br><span class="line">99</span><br><span class="line">100</span><br><span class="line">101</span><br><span class="line">102</span><br><span class="line">103</span><br><span class="line">104</span><br><span class="line">105</span><br><span class="line">106</span><br><span class="line">107</span><br><span class="line">108</span><br><span class="line">109</span><br><span class="line">110</span><br><span class="line">111</span><br><span class="line">112</span><br><span class="line">113</span><br><span class="line">114</span><br><span class="line">115</span><br><span class="line">116</span><br><span class="line">117</span><br><span class="line">118</span><br><span class="line">119</span><br><span class="line">120</span><br><span class="line">121</span><br><span class="line">122</span><br><span class="line">123</span><br><span class="line">124</span><br><span class="line">125</span><br><span class="line">126</span><br><span class="line">127</span><br><span class="line">128</span><br><span class="line">129</span><br><span class="line">130</span><br><span class="line">131</span><br><span class="line">132</span><br><span class="line">133</span><br><span class="line">134</span><br><span class="line">135</span><br><span class="line">136</span><br><span class="line">137</span><br><span class="line">138</span><br><span class="line">139</span><br><span class="line">140</span><br><span class="line">141</span><br><span class="line">142</span><br><span class="line">143</span><br><span class="line">144</span><br><span class="line">145</span><br><span class="line">146</span><br><span class="line">147</span><br><span class="line">148</span><br><span class="line">149</span><br><span class="line">150</span><br><span class="line">151</span><br><span class="line">152</span><br><span class="line">153</span><br><span class="line">154</span><br><span class="line">155</span><br><span class="line">156</span><br><span class="line">157</span><br><span class="line">158</span><br><span class="line">159</span><br><span class="line">160</span><br><span class="line">161</span><br><span class="line">162</span><br><span class="line">163</span><br><span class="line">164</span><br><span class="line">165</span><br><span class="line">166</span><br><span class="line">167</span><br><span class="line">168</span><br><span class="line">169</span><br><span class="line">170</span><br><span class="line">171</span><br><span class="line">172</span><br><span class="line">173</span><br><span class="line">174</span><br><span class="line">175</span><br><span class="line">176</span><br><span class="line">177</span><br><span class="line">178</span><br><span class="line">179</span><br><span class="line">180</span><br><span class="line">181</span><br><span class="line">182</span><br><span class="line">183</span><br><span class="line">184</span><br><span class="line">185</span><br><span class="line">186</span><br><span class="line">187</span><br><span class="line">188</span><br><span class="line">189</span><br><span class="line">190</span><br><span class="line">191</span><br><span class="line">192</span><br><span class="line">193</span><br><span class="line">194</span><br><span class="line">195</span><br><span class="line">196</span><br><span class="line">197</span><br><span class="line">198</span><br><span class="line">199</span><br><span class="line">200</span><br><span class="line">201</span><br><span class="line">202</span><br><span class="line">203</span><br><span class="line">204</span><br><span class="line">205</span><br><span class="line">206</span><br><span class="line">207</span><br><span class="line">208</span><br><span class="line">209</span><br><span class="line">210</span><br><span class="line">211</span><br><span class="line">212</span><br><span class="line">213</span><br><span class="line">214</span><br><span class="line">215</span><br><span class="line">216</span><br><span class="line">217</span><br><span class="line">218</span><br><span class="line">219</span><br><span class="line">220</span><br><span class="line">221</span><br><span class="line">222</span><br><span class="line">223</span><br><span class="line">224</span><br><span class="line">225</span><br><span class="line">226</span><br><span class="line">227</span><br><span class="line">228</span><br><span class="line">229</span><br><span class="line">230</span><br><span class="line">231</span><br><span class="line">232</span><br><span class="line">233</span><br><span class="line">234</span><br><span class="line">235</span><br><span class="line">236</span><br><span class="line">237</span><br><span class="line">238</span><br><span class="line">239</span><br><span class="line">240</span><br><span class="line">241</span><br><span class="line">242</span><br><span class="line">243</span><br><span class="line">244</span><br><span class="line">245</span><br><span class="line">246</span><br><span class="line">247</span><br><span class="line">248</span><br><span class="line">249</span><br><span class="line">250</span><br><span class="line">251</span><br><span class="line">252</span><br><span class="line">253</span><br><span class="line">254</span><br><span class="line">255</span><br><span class="line">256</span><br><span class="line">257</span><br><span class="line">258</span><br><span class="line">259</span><br><span class="line">260</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">import</span> os</span><br><span class="line"><span class="keyword">import</span> math</span><br><span class="line"><span class="keyword">from</span> datetime <span class="keyword">import</span> datetime, timedelta</span><br><span class="line"><span class="keyword">from</span> dotenv <span class="keyword">import</span> load_dotenv</span><br><span class="line"><span class="keyword">from</span> langchain.chat_models <span class="keyword">import</span> init_chat_model</span><br><span class="line"><span class="keyword">from</span> langchain.agents <span class="keyword">import</span> create_agent</span><br><span class="line"><span class="keyword">from</span> langchain.tools <span class="keyword">import</span> tool</span><br><span class="line"><span class="keyword">from</span> rich <span class="keyword">import</span> <span class="built_in">print</span> <span class="keyword">as</span> rprint</span><br><span class="line"></span><br><span class="line">load_dotenv(override=<span class="literal">True</span>)</span><br><span class="line"></span><br><span class="line">model = init_chat_model(model=<span class="string">&quot;deepseek-chat&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ========== 工具定义 ==========</span></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_weather</span>(<span class="params">city: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    查询城市天气</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        city (str): 城市名称，例如 &quot;北京&quot; 或 &quot;上海&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 天气信息字符串，包含温度、天气状况、湿度和风力</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    weather_data = &#123;</span><br><span class="line">        <span class="string">&quot;北京&quot;</span>: <span class="string">&quot;晴天，温度28°C，湿度45%，风力3级&quot;</span>,</span><br><span class="line">        <span class="string">&quot;上海&quot;</span>: <span class="string">&quot;多云，温度26°C，湿度65%，风力2级&quot;</span>,</span><br><span class="line">        <span class="string">&quot;广州&quot;</span>: <span class="string">&quot;小雨，温度30°C，湿度80%，风力1级&quot;</span>,</span><br><span class="line">        <span class="string">&quot;深圳&quot;</span>: <span class="string">&quot;阴天，温度29°C，湿度70%，风力2级&quot;</span>,</span><br><span class="line">        <span class="string">&quot;杭州&quot;</span>: <span class="string">&quot;晴天，温度27°C，湿度50%，风力2级&quot;</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">return</span> weather_data.get(city, <span class="string">f&quot;<span class="subst">&#123;city&#125;</span>：晴天，温度25°C，湿度50%，风力2级&quot;</span>)</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">calculator</span>(<span class="params">expression: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    数学计算工具，支持基本运算和数学函数</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        expression (str): 数学表达式，例如 &quot;2**10&quot; 或 &quot;math.sqrt(144)&quot; 或 &quot;math.pi * 5**2&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 计算结果字符串</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    allowed_names = &#123;</span><br><span class="line">        <span class="string">&quot;math&quot;</span>: math,</span><br><span class="line">        <span class="string">&quot;abs&quot;</span>: <span class="built_in">abs</span>,</span><br><span class="line">        <span class="string">&quot;round&quot;</span>: <span class="built_in">round</span>,</span><br><span class="line">        <span class="string">&quot;pow&quot;</span>: <span class="built_in">pow</span>,</span><br><span class="line">        <span class="string">&quot;min&quot;</span>: <span class="built_in">min</span>,</span><br><span class="line">        <span class="string">&quot;max&quot;</span>: <span class="built_in">max</span>,</span><br><span class="line">        <span class="string">&quot;sum&quot;</span>: <span class="built_in">sum</span>,</span><br><span class="line">    &#125;</span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        result = <span class="built_in">eval</span>(expression, &#123;<span class="string">&quot;__builtins__&quot;</span>: &#123;&#125;&#125;, allowed_names)</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;<span class="subst">&#123;expression&#125;</span> = <span class="subst">&#123;result&#125;</span>&quot;</span></span><br><span class="line">    <span class="keyword">except</span> Exception <span class="keyword">as</span> e:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;计算错误：<span class="subst">&#123;e&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">get_time_info</span>(<span class="params">query: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    时间查询工具，支持获取当前时间和日期计算</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        query (str): 查询类型，&quot;now&quot; 获取当前时间，数字表示天数偏移如 &quot;3&quot; 表示3天后，&quot;-7&quot; 表示7天前</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 时间信息字符串</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    now = datetime.now()</span><br><span class="line">    weekdays = [<span class="string">&#x27;一&#x27;</span>, <span class="string">&#x27;二&#x27;</span>, <span class="string">&#x27;三&#x27;</span>, <span class="string">&#x27;四&#x27;</span>, <span class="string">&#x27;五&#x27;</span>, <span class="string">&#x27;六&#x27;</span>, <span class="string">&#x27;日&#x27;</span>]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> query.strip().lower() == <span class="string">&quot;now&quot;</span>:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;当前时间：<span class="subst">&#123;now.strftime(<span class="string">&#x27;%Y年%m月%d日 %H:%M:%S&#x27;</span>)&#125;</span>，星期<span class="subst">&#123;weekdays[now.weekday()]&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">try</span>:</span><br><span class="line">        days = <span class="built_in">int</span>(query.strip())</span><br><span class="line">        target = now + timedelta(days=days)</span><br><span class="line">        <span class="keyword">if</span> days &gt; <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="string">f&quot;<span class="subst">&#123;days&#125;</span>天后是：<span class="subst">&#123;target.strftime(<span class="string">&#x27;%Y年%m月%d日&#x27;</span>)&#125;</span>，星期<span class="subst">&#123;weekdays[target.weekday()]&#125;</span>&quot;</span></span><br><span class="line">        <span class="keyword">elif</span> days &lt; <span class="number">0</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="string">f&quot;<span class="subst">&#123;<span class="built_in">abs</span>(days)&#125;</span>天前是：<span class="subst">&#123;target.strftime(<span class="string">&#x27;%Y年%m月%d日&#x27;</span>)&#125;</span>，星期<span class="subst">&#123;weekdays[target.weekday()]&#125;</span>&quot;</span></span><br><span class="line">        <span class="keyword">else</span>:</span><br><span class="line">            <span class="keyword">return</span> <span class="string">f&quot;今天：<span class="subst">&#123;target.strftime(<span class="string">&#x27;%Y年%m月%d日&#x27;</span>)&#125;</span>，星期<span class="subst">&#123;weekdays[target.weekday()]&#125;</span>&quot;</span></span><br><span class="line">    <span class="keyword">except</span> ValueError:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;当前时间：<span class="subst">&#123;now.strftime(<span class="string">&#x27;%Y年%m月%d日 %H:%M:%S&#x27;</span>)&#125;</span>，星期<span class="subst">&#123;weekdays[now.weekday()]&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">convert_currency</span>(<span class="params">amount: <span class="built_in">float</span>, from_currency: <span class="built_in">str</span>, to_currency: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    货币转换工具，支持多种货币之间的汇率转换</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        amount (float): 转换金额</span></span><br><span class="line"><span class="string">        from_currency (str): 源货币代码，如 &quot;CNY&quot;、&quot;USD&quot;、&quot;EUR&quot;、&quot;JPY&quot;、&quot;GBP&quot;</span></span><br><span class="line"><span class="string">        to_currency (str): 目标货币代码，如 &quot;CNY&quot;、&quot;USD&quot;、&quot;EUR&quot;、&quot;JPY&quot;、&quot;GBP&quot;</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 转换结果字符串</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    rates_to_usd = &#123;</span><br><span class="line">        <span class="string">&quot;CNY&quot;</span>: <span class="number">7.25</span>,</span><br><span class="line">        <span class="string">&quot;USD&quot;</span>: <span class="number">1.0</span>,</span><br><span class="line">        <span class="string">&quot;EUR&quot;</span>: <span class="number">0.92</span>,</span><br><span class="line">        <span class="string">&quot;JPY&quot;</span>: <span class="number">157.0</span>,</span><br><span class="line">        <span class="string">&quot;GBP&quot;</span>: <span class="number">0.79</span>,</span><br><span class="line">        <span class="string">&quot;KRW&quot;</span>: <span class="number">1380.0</span>,</span><br><span class="line">        <span class="string">&quot;HKD&quot;</span>: <span class="number">7.80</span>,</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    from_upper = from_currency.upper()</span><br><span class="line">    to_upper = to_currency.upper()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> from_upper <span class="keyword">not</span> <span class="keyword">in</span> rates_to_usd:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;不支持的货币：<span class="subst">&#123;from_currency&#125;</span>，支持：<span class="subst">&#123;<span class="string">&#x27;, &#x27;</span>.join(rates_to_usd.keys())&#125;</span>&quot;</span></span><br><span class="line">    <span class="keyword">if</span> to_upper <span class="keyword">not</span> <span class="keyword">in</span> rates_to_usd:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">f&quot;不支持的货币：<span class="subst">&#123;to_currency&#125;</span>，支持：<span class="subst">&#123;<span class="string">&#x27;, &#x27;</span>.join(rates_to_usd.keys())&#125;</span>&quot;</span></span><br><span class="line"></span><br><span class="line">    usd_amount = amount / rates_to_usd[from_upper]</span><br><span class="line">    result = usd_amount * rates_to_usd[to_upper]</span><br><span class="line"></span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;<span class="subst">&#123;amount&#125;</span> <span class="subst">&#123;from_upper&#125;</span> = <span class="subst">&#123;result:<span class="number">.2</span>f&#125;</span> <span class="subst">&#123;to_upper&#125;</span>（汇率：1 <span class="subst">&#123;from_upper&#125;</span> = <span class="subst">&#123;rates_to_usd[to_upper] / rates_to_usd[from_upper]:<span class="number">.4</span>f&#125;</span> <span class="subst">&#123;to_upper&#125;</span>）&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="meta">@tool(<span class="params">parse_docstring=<span class="literal">True</span></span>)</span></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">search_info</span>(<span class="params">keyword: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;</span></span><br><span class="line"><span class="string">    信息搜索工具，搜索产品、新闻等信息</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Args:</span></span><br><span class="line"><span class="string">        keyword (str): 搜索关键词</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">    Returns:</span></span><br><span class="line"><span class="string">        str: 搜索结果字符串</span></span><br><span class="line"><span class="string">    &quot;&quot;&quot;</span></span><br><span class="line">    knowledge_base = &#123;</span><br><span class="line">        <span class="string">&quot;iphone&quot;</span>: <span class="string">&quot;iPhone 16 Pro：A18 Pro芯片，6.3英寸超视网膜XDR显示屏，4800万像素融合摄像头，起售价7999元&quot;</span>,</span><br><span class="line">        <span class="string">&quot;华为&quot;</span>: <span class="string">&quot;华为 Mate 70 Pro：麒麟9020芯片，6.82英寸OLED屏幕，5000万像素超感知影像系统，起售价6499元&quot;</span>,</span><br><span class="line">        <span class="string">&quot;特斯拉&quot;</span>: <span class="string">&quot;特斯拉 Model 3 焕新版：续航里程606km，0-100km/h加速6.1秒，起售价23.19万元&quot;</span>,</span><br><span class="line">        <span class="string">&quot;ai&quot;</span>: <span class="string">&quot;2026年AI最新动态：GPT-5发布，多模态能力大幅提升；国内大模型百花齐放，DeepSeek、通义千问持续迭代&quot;</span>,</span><br><span class="line">        <span class="string">&quot;诺贝尔&quot;</span>: <span class="string">&quot;2024年诺贝尔物理学奖授予John J. Hopfield和Geoffrey E. Hinton，表彰他们在人工神经网络方面的基础性贡献&quot;</span>,</span><br><span class="line">    &#125;</span><br><span class="line"></span><br><span class="line">    results = []</span><br><span class="line">    <span class="keyword">for</span> key, value <span class="keyword">in</span> knowledge_base.items():</span><br><span class="line">        <span class="keyword">if</span> keyword.lower() <span class="keyword">in</span> key.lower() <span class="keyword">or</span> key.lower() <span class="keyword">in</span> keyword.lower():</span><br><span class="line">            results.append(value)</span><br><span class="line"></span><br><span class="line">    <span class="keyword">if</span> results:</span><br><span class="line">        <span class="keyword">return</span> <span class="string">&quot;\n&quot;</span>.join(results)</span><br><span class="line">    <span class="keyword">return</span> <span class="string">f&quot;未找到与 &#x27;<span class="subst">&#123;keyword&#125;</span>&#x27; 相关的信息，请尝试其他关键词&quot;</span></span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ========== 智能助手类 ==========</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">class</span> <span class="title class_">SmartAssistant</span>:</span><br><span class="line">    <span class="string">&quot;&quot;&quot;多功能智能助手&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">__init__</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="comment"># 初始化模型</span></span><br><span class="line">        <span class="variable language_">self</span>.model = model</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 工具列表</span></span><br><span class="line">        <span class="variable language_">self</span>.tools = [</span><br><span class="line">            get_weather,</span><br><span class="line">            calculator,</span><br><span class="line">            get_time_info,</span><br><span class="line">            convert_currency,</span><br><span class="line">            search_info</span><br><span class="line">        ]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 系统提示词</span></span><br><span class="line">        system_prompt = <span class="string">&quot;&quot;&quot;你是一个多功能智能助手，可以帮助用户：</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">🌤️ 查询天气：使用 get_weather 工具</span></span><br><span class="line"><span class="string">🧮 数学计算：使用 calculator 工具</span></span><br><span class="line"><span class="string">⏰ 时间查询：使用 get_time_info 工具</span></span><br><span class="line"><span class="string">💱 货币转换：使用 convert_currency 工具</span></span><br><span class="line"><span class="string">🔍 信息搜索：使用 search_info 工具</span></span><br><span class="line"><span class="string"></span></span><br><span class="line"><span class="string">请根据用户的问题，选择合适的工具来回答。如果问题涉及多个方面，可以组合使用多个工具。&quot;&quot;&quot;</span></span><br><span class="line"></span><br><span class="line">        <span class="comment"># 初始化 Agent</span></span><br><span class="line">        <span class="variable language_">self</span>.agent = create_agent(</span><br><span class="line">            model=<span class="variable language_">self</span>.model,</span><br><span class="line">            tools=<span class="variable language_">self</span>.tools,</span><br><span class="line">            system_prompt=system_prompt</span><br><span class="line">        )</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 对话历史</span></span><br><span class="line">        <span class="variable language_">self</span>.messages = []</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">chat</span>(<span class="params">self, user_input: <span class="built_in">str</span></span>) -&gt; <span class="built_in">str</span>:</span><br><span class="line">        <span class="string">&quot;&quot;&quot;对话接口&quot;&quot;&quot;</span></span><br><span class="line">        <span class="comment"># 添加用户消息</span></span><br><span class="line">        <span class="variable language_">self</span>.messages.append(&#123;<span class="string">&quot;role&quot;</span>: <span class="string">&quot;user&quot;</span>, <span class="string">&quot;content&quot;</span>: user_input&#125;)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 调用 agent</span></span><br><span class="line">        result = <span class="variable language_">self</span>.agent.invoke(&#123;<span class="string">&quot;messages&quot;</span>: <span class="variable language_">self</span>.messages&#125;)</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 更新消息历史</span></span><br><span class="line">        <span class="variable language_">self</span>.messages = result[<span class="string">&quot;messages&quot;</span>]</span><br><span class="line"></span><br><span class="line">        <span class="comment"># 返回最后一条 AI 消息</span></span><br><span class="line">        <span class="keyword">return</span> result[<span class="string">&quot;messages&quot;</span>][-<span class="number">1</span>].content</span><br><span class="line"></span><br><span class="line">    <span class="keyword">def</span> <span class="title function_">reset</span>(<span class="params">self</span>):</span><br><span class="line">        <span class="string">&quot;&quot;&quot;重置对话历史&quot;&quot;&quot;</span></span><br><span class="line">        <span class="variable language_">self</span>.messages = []</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="comment"># ========== 交互式问答 ==========</span></span><br><span class="line"></span><br><span class="line"><span class="keyword">def</span> <span class="title function_">main</span>():</span><br><span class="line">    <span class="string">&quot;&quot;&quot;交互式问答主循环&quot;&quot;&quot;</span></span><br><span class="line">    assistant = SmartAssistant()</span><br><span class="line"></span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;=&quot;</span> * <span class="number">60</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;🤖 多功能智能助手&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;=&quot;</span> * <span class="number">60</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;支持功能：天气查询 | 数学计算 | 时间查询 | 货币转换 | 信息搜索&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;输入 &#x27;quit&#x27; 或 &#x27;exit&#x27; 退出&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;输入 &#x27;reset&#x27; 清空对话历史&quot;</span>)</span><br><span class="line">    <span class="built_in">print</span>(<span class="string">&quot;=&quot;</span> * <span class="number">60</span>)</span><br><span class="line">    <span class="built_in">print</span>()</span><br><span class="line"></span><br><span class="line">    <span class="keyword">while</span> <span class="literal">True</span>:</span><br><span class="line">        <span class="keyword">try</span>:</span><br><span class="line">            user_input = <span class="built_in">input</span>(<span class="string">&quot;🧑 你：&quot;</span>).strip()</span><br><span class="line">        <span class="keyword">except</span> (EOFError, KeyboardInterrupt):</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;\n再见！&quot;</span>)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> <span class="keyword">not</span> user_input:</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> user_input.lower() <span class="keyword">in</span> (<span class="string">&quot;quit&quot;</span>, <span class="string">&quot;exit&quot;</span>):</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;🤖 助手：再见！有需要随时找我～&quot;</span>)</span><br><span class="line">            <span class="keyword">break</span></span><br><span class="line"></span><br><span class="line">        <span class="keyword">if</span> user_input.lower() == <span class="string">&quot;reset&quot;</span>:</span><br><span class="line">            assistant.reset()</span><br><span class="line">            <span class="built_in">print</span>(<span class="string">&quot;🤖 助手：对话历史已清空，我们重新开始吧！\n&quot;</span>)</span><br><span class="line">            <span class="keyword">continue</span></span><br><span class="line"></span><br><span class="line">        <span class="built_in">print</span>()</span><br><span class="line">        response = assistant.chat(user_input)</span><br><span class="line">        <span class="built_in">print</span>(<span class="string">f&quot;🤖 助手：<span class="subst">&#123;response&#125;</span>&quot;</span>)</span><br><span class="line">        <span class="built_in">print</span>()</span><br><span class="line"></span><br><span class="line"></span><br><span class="line"><span class="keyword">if</span> __name__ == <span class="string">&quot;__main__&quot;</span>:</span><br><span class="line">    main()</span><br></pre></td></tr></table></figure>
+
+<hr>
+<blockquote>
+<p><strong>总结</strong>：本笔记展示了从工具定义到交互式智能助手的完整开发路线。第一阶段定义五个各具特色的工具（单参数、安全eval、双模式、多参数、模糊匹配）；第二阶段创建 Agent 让大模型自动编排工具；第三阶段封装为类实现多轮对话和交互式问答。这种循序渐进的架构方式，是构建 AI 助手应用的经典范式。</p>
+</blockquote>
+<blockquote>
+<p>下一篇我们实现一个可以设定角色基础信息，前后端可对话的小项目，对前面的知识进行串联。更多功能请关注我的微信公众号（最后一间酒吧）</p>
+</blockquote>
+</article><div class="post-copyright"><div class="post-copyright__author"><span class="post-copyright-meta"><i class="fas fa-circle-user fa-fw"></i>文章作者: </span><span class="post-copyright-info"><a href="https://mschange.github.io">筎柒</a></span></div><div class="post-copyright__type"><span class="post-copyright-meta"><i class="fas fa-square-arrow-up-right fa-fw"></i>文章链接: </span><span class="post-copyright-info"><a href="https://mschange.github.io/posts/langchain-lesson16-smart-assistant/">https://mschange.github.io/posts/langchain-lesson16-smart-assistant/</a></span></div><div class="post-copyright__notice"><span class="post-copyright-meta"><i class="fas fa-circle-exclamation fa-fw"></i>版权声明: </span><span class="post-copyright-info">本博客所有文章除特别声明外，均采用 <a href="https://creativecommons.org/licenses/by-nc-sa/4.0/" target="_blank">CC BY-NC-SA 4.0</a> 许可协议。转载请注明来源 <a href="https://mschange.github.io" target="_blank">筎柒的个人笔记</a>！</span></div></div><div class="tag_share"><div class="post-meta__tag-list"><a class="post-meta__tags" href="/tags/Python/">Python</a><a class="post-meta__tags" href="/tags/%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0/">学习笔记</a><a class="post-meta__tags" href="/tags/%E9%A1%B9%E7%9B%AE%E5%AE%9E%E6%88%98/">项目实战</a><a class="post-meta__tags" href="/tags/LangChain/">LangChain</a><a class="post-meta__tags" href="/tags/DeepSeek/">DeepSeek</a><a class="post-meta__tags" href="/tags/AI/">AI</a><a class="post-meta__tags" href="/tags/%E5%A4%A7%E6%A8%A1%E5%9E%8B/">大模型</a><a class="post-meta__tags" href="/tags/Agent/">Agent</a><a class="post-meta__tags" href="/tags/Tool/">Tool</a></div><div class="post-share"><div class="social-share" data-image="/img/post-cover.jpg" data-sites="wechat,weibo,qq,facebook,x"></div><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/css/share.min.css" media="print" onload="this.media='all'"><script src="https://cdn.jsdelivr.net/npm/butterfly-extsrc@1.1.6/sharejs/dist/js/social-share.min.js" defer></script></div></div><nav class="pagination-post" id="pagination"><a class="pagination-related full-width" href="/posts/langchain-lesson15-agent-stream/" title="LangChain 15：Agent 流式输出完全指南"><img class="cover" src="/img/post-cover.jpg" onerror="onerror=null;src='/img/404.jpg'" alt="cover of next post"><div class="info text-right"><div class="info-1"><div class="info-item-1">下一篇</div><div class="info-item-2">LangChain 15：Agent 流式输出完全指南</div></div><div class="info-2"><div class="info-item-1">LangChain 15：Agent 流式输出完全指南 agent.stream() 的六种 stream_mode 模式详解：values、updates、messages、tasks、debug、custom，从完整状态到逐 Token 输出，从任务监控到自定义数据流。所有代码均可单独复制运行。   目录 环境准备 一、流式输出概览 1.1 invoke vs stream 1.2 stream_mode 六种模式   二、values 模式：完整状态输出 2.1 工作原理 2.2 完整代码 2.3 输出详解 2.4 适用场景   三、updates 模式：增量更新输出 3.1 工作...</div></div></div></a></nav><div class="relatedPosts"><div class="headline"><i class="fas fa-thumbs-up fa-fw"></i><span>相关推荐</span></div><div class="relatedPosts-list"><a class="pagination-related" href="/posts/langchain-lesson13-create-agent/" title="LangChain 13：Agent 创建与使用完全指南"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-09-11</div><div class="info-item-2">LangChain 13：Agent 创建与使用完全指南</div></div><div class="info-2"><div class="info-item-1">LangChain 13：Agent 创建与使用完全指南 create_agent 从零到一：无工具对话、自定义工具、内置工具（Tavily 搜索）、多工具并行、Agent 配置（name &#x2F; system_prompt）。所有代码均可单独复制运行。   目录 环境准备 一、create_agent 概览 1.1 什么是 Agent 1.2 create_agent 函数签名 1.3 与之前学到的调用方式的关系   二、基础 Agent：无工具对话 2.1 核心概念 2.2 完整代码 2.3 运行结果 2.4 消息传入方式详解   三、Agent + 自定义工具 3.1 核心概...</div></div></div></a><a class="pagination-related" href="/posts/langchain-lesson10-tool-calling-practice/" title="LangChain 10：工具调用实战指南"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-09-09</div><div class="info-item-2">LangChain 10：工具调用实战指南</div></div><div class="info-2"><div class="info-item-1">LangChain 10：工具调用实战指南 从单工具到多工具，从手动调用到 Agent 自动调用，通过实战案例深入掌握工具调用的核心机制。所有代码均可单独复制运行。   目录 环境准备 一、Pydantic Schema 定义复杂参数 二、手动调用工具（bind_tools） 三、Agent 自动调用工具（create_agent） 四、多工具调用实战 五、知识体系总结 六、常见问题   环境准备安装依赖1pip install langchain langchain-deepseek python-dotenv pydantic  配置 .env 文件12OPENAI_API_KEY=...</div></div></div></a><a class="pagination-related" href="/posts/langchain-lesson09-tool-calling/" title="LangChain 09：工具调用（Tool Calling）完全指南"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-09-08</div><div class="info-item-2">LangChain 09：工具调用（Tool Calling）完全指南</div></div><div class="info-2"><div class="info-item-1">LangChain 09：工具调用（Tool Calling）完全指南 从 @tool 装饰器到 bind_tools，从手动执行工具到 Agent 自动调用，从 Pydantic Schema 到 JSON Schema，系统掌握 LangChain 工具调用的核心机制。所有代码均可单独复制运行。   目录 环境准备 一、什么是工具调用 二、工具定义与基础调用 三、手动实现工具执行流程 四、convert_to_openai_tool：工具描述生成机制 五、@tool 装饰器进阶用法 六、Pydantic Schema 定义工具参数 七、JSON Schema 定义工具参数 八、知识体...</div></div></div></a><a class="pagination-related" href="/posts/langchain-lesson15-agent-structured-output-errors/" title="LangChain 15：Agent 结构化输出错误处理完全指南"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-09-13</div><div class="info-item-2">LangChain 15：Agent 结构化输出错误处理完全指南</div></div><div class="info-2"><div class="info-item-1">LangChain 15：Agent 结构化输出错误处理完全指南 ToolStrategy 的 handle_errors 参数详解：五种错误处理策略（True &#x2F; False &#x2F; 字符串 &#x2F; 异常类型 &#x2F; 自定义函数），两种内置异常类型，完整实战演示。所有代码均可单独复制运行。   目录 环境准备 一、为什么需要错误处理 1.1 模型输出的不确定性 1.2 两类内置异常   二、handle_errors 五种策略总览 三、策略一：handle_errors&#x3D;True（默认） 3.1 工作原理 3.2 完整代码 3.3 运行流程   四...</div></div></div></a><a class="pagination-related" href="/posts/langchain-lesson15-agent-stream/" title="LangChain 15：Agent 流式输出完全指南"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-09-14</div><div class="info-item-2">LangChain 15：Agent 流式输出完全指南</div></div><div class="info-2"><div class="info-item-1">LangChain 15：Agent 流式输出完全指南 agent.stream() 的六种 stream_mode 模式详解：values、updates、messages、tasks、debug、custom，从完整状态到逐 Token 输出，从任务监控到自定义数据流。所有代码均可单独复制运行。   目录 环境准备 一、流式输出概览 1.1 invoke vs stream 1.2 stream_mode 六种模式   二、values 模式：完整状态输出 2.1 工作原理 2.2 完整代码 2.3 输出详解 2.4 适用场景   三、updates 模式：增量更新输出 3.1 工作...</div></div></div></a><a class="pagination-related" href="/posts/langchain-lesson06-model-invoke-config/" title="LangChain 06：模型调用详解"><img class="cover" src="/img/post-cover.jpg" alt="cover"><div class="info text-center"><div class="info-1"><div class="info-item-1"><i class="far fa-calendar-alt fa-fw"></i> 2026-09-08</div><div class="info-item-2">LangChain 06：模型调用详解</div></div><div class="info-2"><div class="info-item-1">LangChain 06：模型调用详解 本教程涵盖模型初始化参数、invoke 传参方式、config 动态配置、Agent 工具调用等核心知识点。所有代码均可单独复制运行，运行前确保 .env 中配置了 DeepSeek API 密钥。   目录 环境准备 一、invoke 的三种传参方式 二、模型初始化参数详解 三、config 动态配置（运行时覆盖） 四、Agent + 工具 + config 综合控制 五、configurable_fields 声明式动态配置 六、知识体系总结   环境准备12from dotenv import load_dotenvload_dotenv(o...</div></div></div></a></div></div></div><div class="aside-content" id="aside-content"><div class="sticky_layout"><div class="card-widget" id="card-toc"><div class="item-headline"><i class="fas fa-stream"></i><span>目录</span><span class="toc-percentage"></span></div><div class="toc-content"><ol class="toc"><li class="toc-item toc-level-1"><a class="toc-link" href="#LangChain-16%EF%BC%9A%E5%A4%9A%E5%8A%9F%E8%83%BD%E6%99%BA%E8%83%BD%E5%8A%A9%E6%89%8B%E5%BC%80%E5%8F%91%E5%AE%8C%E5%85%A8%E6%8C%87%E5%8D%97"><span class="toc-number">1.</span> <span class="toc-text">LangChain 16：多功能智能助手开发完全指南</span></a><ol class="toc-child"><li class="toc-item toc-level-2"><a class="toc-link" href="#%E7%9B%AE%E5%BD%95"><span class="toc-number">1.1.</span> <span class="toc-text">目录</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%80%E3%80%81%E9%A1%B9%E7%9B%AE%E7%9B%AE%E6%A0%87"><span class="toc-number">1.2.</span> <span class="toc-text">一、项目目标</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#1-1-%E5%8A%9F%E8%83%BD%E8%A7%84%E5%88%92"><span class="toc-number">1.2.1.</span> <span class="toc-text">1.1 功能规划</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-2-%E5%BC%80%E5%8F%91%E8%B7%AF%E7%BA%BF"><span class="toc-number">1.2.2.</span> <span class="toc-text">1.2 开发路线</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#1-3-%E4%BE%9D%E8%B5%96%E5%AF%BC%E5%85%A5"><span class="toc-number">1.2.3.</span> <span class="toc-text">1.3 依赖导入</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%8C%E3%80%81%E7%8E%AF%E5%A2%83%E9%85%8D%E7%BD%AE%E4%B8%8E%E6%A8%A1%E5%9E%8B%E5%88%9D%E5%A7%8B%E5%8C%96"><span class="toc-number">1.3.</span> <span class="toc-text">二、环境配置与模型初始化</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#2-1-%E9%80%90%E8%A1%8C%E8%A7%A3%E6%9E%90"><span class="toc-number">1.3.1.</span> <span class="toc-text">2.1 逐行解析</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#2-2-init-chat-model-%E7%9A%84%E7%BB%9F%E4%B8%80%E6%8E%A5%E5%8F%A3"><span class="toc-number">1.3.2.</span> <span class="toc-text">2.2 init_chat_model 的统一接口</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%89%E3%80%81%E7%AC%AC%E4%B8%80%E9%98%B6%E6%AE%B5-%E2%80%94-%E5%B7%A5%E5%85%B7%E5%AE%9A%E4%B9%89"><span class="toc-number">1.4.</span> <span class="toc-text">三、第一阶段 — 工具定义</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#3-1-tool-%E8%A3%85%E9%A5%B0%E5%99%A8%E6%9C%BA%E5%88%B6"><span class="toc-number">1.4.1.</span> <span class="toc-text">3.1 @tool 装饰器机制</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%85%B3%E9%94%AE%E8%A6%81%E7%B4%A0"><span class="toc-number">1.4.1.1.</span> <span class="toc-text">关键要素</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88-docstring-%E5%A6%82%E6%AD%A4%E9%87%8D%E8%A6%81%EF%BC%9F"><span class="toc-number">1.4.1.2.</span> <span class="toc-text">为什么 docstring 如此重要？</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-2-%E5%B7%A5%E5%85%B7%E4%B8%80%EF%BC%9A%E5%A4%A9%E6%B0%94%E6%9F%A5%E8%AF%A2"><span class="toc-number">1.4.2.</span> <span class="toc-text">3.2 工具一：天气查询</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-3-%E5%B7%A5%E5%85%B7%E4%BA%8C%EF%BC%9A%E6%95%B0%E5%AD%A6%E8%AE%A1%E7%AE%97"><span class="toc-number">1.4.3.</span> <span class="toc-text">3.3 工具二：数学计算</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%AE%89%E5%85%A8%E6%80%A7%E8%AE%BE%E8%AE%A1%EF%BC%88%E9%87%8D%E7%82%B9%EF%BC%89"><span class="toc-number">1.4.3.1.</span> <span class="toc-text">安全性设计（重点）</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-4-%E5%B7%A5%E5%85%B7%E4%B8%89%EF%BC%9A%E6%97%B6%E9%97%B4%E6%9F%A5%E8%AF%A2"><span class="toc-number">1.4.4.</span> <span class="toc-text">3.4 工具三：时间查询</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-5-%E5%B7%A5%E5%85%B7%E5%9B%9B%EF%BC%9A%E8%B4%A7%E5%B8%81%E8%BD%AC%E6%8D%A2"><span class="toc-number">1.4.5.</span> <span class="toc-text">3.5 工具四：货币转换</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#USD-%E4%B8%AD%E8%BD%AC%E6%B3%95"><span class="toc-number">1.4.5.1.</span> <span class="toc-text">USD 中转法</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%A4%9A%E5%8F%82%E6%95%B0%E5%B7%A5%E5%85%B7%E7%9A%84%E7%89%B9%E7%82%B9"><span class="toc-number">1.4.5.2.</span> <span class="toc-text">多参数工具的特点</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-6-%E5%B7%A5%E5%85%B7%E4%BA%94%EF%BC%9A%E4%BF%A1%E6%81%AF%E6%90%9C%E7%B4%A2"><span class="toc-number">1.4.6.</span> <span class="toc-text">3.6 工具五：信息搜索</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%8F%8C%E5%90%91%E6%A8%A1%E7%B3%8A%E5%8C%B9%E9%85%8D"><span class="toc-number">1.4.6.1.</span> <span class="toc-text">双向模糊匹配</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#3-7-%E5%B7%A5%E5%85%B7%E8%AE%BE%E8%AE%A1%E8%BF%9B%E9%98%B6%E6%80%BB%E7%BB%93"><span class="toc-number">1.4.7.</span> <span class="toc-text">3.7 工具设计进阶总结</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%9B%9B%E3%80%81%E7%AC%AC%E4%BA%8C%E9%98%B6%E6%AE%B5-%E2%80%94-%E5%88%9B%E5%BB%BA-Agent-%E5%B9%B6%E6%B5%8B%E8%AF%95"><span class="toc-number">1.5.</span> <span class="toc-text">四、第二阶段 — 创建 Agent 并测试</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#4-1-%E5%88%9B%E5%BB%BA-Agent"><span class="toc-number">1.5.1.</span> <span class="toc-text">4.1 创建 Agent</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#create-agent-%E5%8F%82%E6%95%B0%E8%AF%B4%E6%98%8E"><span class="toc-number">1.5.1.1.</span> <span class="toc-text">create_agent 参数说明</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#SystemMessage-%E7%9A%84%E4%B8%89%E9%87%8D%E4%BD%9C%E7%94%A8"><span class="toc-number">1.5.1.2.</span> <span class="toc-text">SystemMessage 的三重作用</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-2-agent-invoke-%E8%B0%83%E7%94%A8%E8%A7%84%E8%8C%83"><span class="toc-number">1.5.2.</span> <span class="toc-text">4.2 agent.invoke() 调用规范</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B6%88%E6%81%AF%E9%93%BE%E7%BB%93%E6%9E%84"><span class="toc-number">1.5.2.1.</span> <span class="toc-text">消息链结构</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-3-%E6%B5%8B%E8%AF%95%E7%94%A8%E4%BE%8B"><span class="toc-number">1.5.3.</span> <span class="toc-text">4.3 测试用例</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95-1%EF%BC%9A%E5%A4%A9%E6%B0%94%E6%9F%A5%E8%AF%A2%EF%BC%88%E5%8D%95%E5%B7%A5%E5%85%B7%E8%B0%83%E7%94%A8%EF%BC%89"><span class="toc-number">1.5.3.1.</span> <span class="toc-text">测试 1：天气查询（单工具调用）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95-2%EF%BC%9A%E6%95%B0%E5%AD%A6%E8%AE%A1%E7%AE%97%EF%BC%88%E8%87%AA%E7%84%B6%E8%AF%AD%E8%A8%80%E8%BD%AC%E8%A1%A8%E8%BE%BE%E5%BC%8F%EF%BC%89"><span class="toc-number">1.5.3.2.</span> <span class="toc-text">测试 2：数学计算（自然语言转表达式）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95-3%EF%BC%9A%E6%97%B6%E9%97%B4%E6%9F%A5%E8%AF%A2%EF%BC%88%E5%8F%8C%E9%97%AE%E9%A2%98%EF%BC%89"><span class="toc-number">1.5.3.3.</span> <span class="toc-text">测试 3：时间查询（双问题）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95-4%EF%BC%9A%E8%B4%A7%E5%B8%81%E8%BD%AC%E6%8D%A2%EF%BC%88%E5%8F%8C%E8%BD%AC%E6%8D%A2%EF%BC%89"><span class="toc-number">1.5.3.4.</span> <span class="toc-text">测试 4：货币转换（双转换）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95-5%EF%BC%9A%E4%BF%A1%E6%81%AF%E6%90%9C%E7%B4%A2%EF%BC%88%E6%A8%A1%E7%B3%8A%E5%8C%B9%E9%85%8D%EF%BC%89"><span class="toc-number">1.5.3.5.</span> <span class="toc-text">测试 5：信息搜索（模糊匹配）</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E6%B5%8B%E8%AF%95-6%EF%BC%9A%E7%BB%BC%E5%90%88%E6%9F%A5%E8%AF%A2%EF%BC%88%E5%A4%9A%E5%B7%A5%E5%85%B7%E7%BB%84%E5%90%88%EF%BC%89"><span class="toc-number">1.5.3.6.</span> <span class="toc-text">测试 6：综合查询（多工具组合）</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#4-4-%E8%BF%87%E7%A8%8B%E5%BC%8F%E7%9A%84%E7%89%B9%E7%82%B9"><span class="toc-number">1.5.4.</span> <span class="toc-text">4.4 过程式的特点</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%BA%94%E3%80%81%E7%AC%AC%E4%B8%89%E9%98%B6%E6%AE%B5-%E2%80%94-%E9%9D%A2%E5%90%91%E5%AF%B9%E8%B1%A1%E5%B0%81%E8%A3%85%E4%B8%8E%E4%BA%A4%E4%BA%92%E5%BC%8F%E9%97%AE%E7%AD%94"><span class="toc-number">1.6.</span> <span class="toc-text">五、第三阶段 — 面向对象封装与交互式问答</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#5-1-SmartAssistant-%E7%B1%BB"><span class="toc-number">1.6.1.</span> <span class="toc-text">5.1 SmartAssistant 类</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%B1%9E%E6%80%A7%E8%AF%B4%E6%98%8E"><span class="toc-number">1.6.1.1.</span> <span class="toc-text">属性说明</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-2-chat-%E6%96%B9%E6%B3%95-%E2%80%94-%E5%A4%9A%E8%BD%AE%E5%AF%B9%E8%AF%9D%E7%9A%84%E6%A0%B8%E5%BF%83"><span class="toc-number">1.6.2.</span> <span class="toc-text">5.2 chat() 方法 — 多轮对话的核心</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%A4%9A%E8%BD%AE%E5%AF%B9%E8%AF%9D%E5%A6%82%E4%BD%95%E5%B7%A5%E4%BD%9C%EF%BC%9F"><span class="toc-number">1.6.2.1.</span> <span class="toc-text">多轮对话如何工作？</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BA%E4%BB%80%E4%B9%88%E7%94%A8%E6%95%B4%E4%BD%93%E6%9B%BF%E6%8D%A2%E8%80%8C%E4%B8%8D%E6%98%AF%E8%BF%BD%E5%8A%A0%EF%BC%9F"><span class="toc-number">1.6.2.2.</span> <span class="toc-text">为什么用整体替换而不是追加？</span></a></li></ol></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-3-reset-%E6%96%B9%E6%B3%95-%E2%80%94-%E9%87%8D%E7%BD%AE%E5%AF%B9%E8%AF%9D"><span class="toc-number">1.6.3.</span> <span class="toc-text">5.3 reset() 方法 — 重置对话</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#5-4-%E4%BA%A4%E4%BA%92%E5%BC%8F%E9%97%AE%E7%AD%94%E4%B8%BB%E5%BE%AA%E7%8E%AF"><span class="toc-number">1.6.4.</span> <span class="toc-text">5.4 交互式问答主循环</span></a><ol class="toc-child"><li class="toc-item toc-level-4"><a class="toc-link" href="#%E4%B8%BB%E5%BE%AA%E7%8E%AF%E6%B5%81%E7%A8%8B"><span class="toc-number">1.6.4.1.</span> <span class="toc-text">主循环流程</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E7%89%B9%E6%AE%8A%E5%91%BD%E4%BB%A4"><span class="toc-number">1.6.4.2.</span> <span class="toc-text">特殊命令</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%BC%82%E5%B8%B8%E5%A4%84%E7%90%86"><span class="toc-number">1.6.4.3.</span> <span class="toc-text">异常处理</span></a></li><li class="toc-item toc-level-4"><a class="toc-link" href="#%E5%85%A5%E5%8F%A3%E4%BF%9D%E6%8A%A4"><span class="toc-number">1.6.4.4.</span> <span class="toc-text">入口保护</span></a></li></ol></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AD%E3%80%81%E4%B8%A4%E7%A7%8D%E6%9E%B6%E6%9E%84%E5%AF%B9%E6%AF%94"><span class="toc-number">1.7.</span> <span class="toc-text">六、两种架构对比</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#6-1-%E4%BB%A3%E7%A0%81%E7%BB%93%E6%9E%84%E5%AF%B9%E6%AF%94"><span class="toc-number">1.7.1.</span> <span class="toc-text">6.1 代码结构对比</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-2-%E5%8A%9F%E8%83%BD%E5%AF%B9%E6%AF%94"><span class="toc-number">1.7.2.</span> <span class="toc-text">6.2 功能对比</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#6-3-%E9%80%82%E7%94%A8%E5%9C%BA%E6%99%AF"><span class="toc-number">1.7.3.</span> <span class="toc-text">6.3 适用场景</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B8%83%E3%80%81%E6%A0%B8%E5%BF%83%E7%9F%A5%E8%AF%86%E7%82%B9%E6%80%BB%E7%BB%93"><span class="toc-number">1.8.</span> <span class="toc-text">七、核心知识点总结</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#7-1-create-agent-%E5%AE%8C%E6%95%B4%E5%8F%82%E6%95%B0"><span class="toc-number">1.8.1.</span> <span class="toc-text">7.1 create_agent 完整参数</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-2-tool-%E8%A3%85%E9%A5%B0%E5%99%A8%E5%AE%8C%E6%95%B4%E7%94%A8%E6%B3%95"><span class="toc-number">1.8.2.</span> <span class="toc-text">7.2 @tool 装饰器完整用法</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-3-agent-invoke-%E8%B0%83%E7%94%A8%E8%A7%84%E8%8C%83"><span class="toc-number">1.8.3.</span> <span class="toc-text">7.3 agent.invoke() 调用规范</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-4-%E5%A4%9A%E8%BD%AE%E5%AF%B9%E8%AF%9D%E6%B6%88%E6%81%AF%E7%AE%A1%E7%90%86"><span class="toc-number">1.8.4.</span> <span class="toc-text">7.4 多轮对话消息管理</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#7-5-%E5%B7%A5%E5%85%B7%E8%AE%BE%E8%AE%A1%E6%9C%80%E4%BD%B3%E5%AE%9E%E8%B7%B5"><span class="toc-number">1.8.5.</span> <span class="toc-text">7.5 工具设计最佳实践</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%85%AB%E3%80%81%E6%89%A9%E5%B1%95%E5%BB%BA%E8%AE%AE"><span class="toc-number">1.9.</span> <span class="toc-text">八、扩展建议</span></a><ol class="toc-child"><li class="toc-item toc-level-3"><a class="toc-link" href="#8-1-%E5%A2%9E%E5%8A%A0%E6%9B%B4%E5%A4%9A%E5%B7%A5%E5%85%B7"><span class="toc-number">1.9.1.</span> <span class="toc-text">8.1 增加更多工具</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-2-%E6%8E%A5%E5%85%A5%E7%9C%9F%E5%AE%9E-API"><span class="toc-number">1.9.2.</span> <span class="toc-text">8.2 接入真实 API</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-3-%E6%B5%81%E5%BC%8F%E8%BE%93%E5%87%BA"><span class="toc-number">1.9.3.</span> <span class="toc-text">8.3 流式输出</span></a></li><li class="toc-item toc-level-3"><a class="toc-link" href="#8-4-%E6%8C%81%E4%B9%85%E5%8C%96%E5%AF%B9%E8%AF%9D%E5%8E%86%E5%8F%B2"><span class="toc-number">1.9.4.</span> <span class="toc-text">8.4 持久化对话历史</span></a></li></ol></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E4%B9%9D%E3%80%81%E8%BF%90%E8%A1%8C%E6%95%88%E6%9E%9C"><span class="toc-number">1.10.</span> <span class="toc-text">九、运行效果</span></a></li><li class="toc-item toc-level-2"><a class="toc-link" href="#%E5%8D%81%E3%80%81%E5%AE%8C%E6%95%B4%E4%BB%A3%E7%A0%81"><span class="toc-number">1.11.</span> <span class="toc-text">十、完整代码</span></a></li></ol></li></ol></div></div></div></div></main><footer id="footer"><div class="footer-other"><div class="footer-copyright"><span class="copyright">&copy;&nbsp;2024 - 2026 By 筎柒</span><span class="framework-info"><span>框架 </span><a target="_blank" rel="noopener" href="https://hexo.io">Hexo 7.3.0</a><span class="footer-separator">|</span><span>主题 </span><a target="_blank" rel="noopener" href="https://github.com/jerryc127/hexo-theme-butterfly">Butterfly 5.7.0</a></span></div></div></footer></div><div id="rightside"><div id="rightside-config-hide"><button id="readmode" type="button" title="阅读模式"><i class="fas fa-book-open"></i></button><button id="darkmode" type="button" title="日间和夜间模式切换"><i class="fas fa-adjust"></i></button><button id="hide-aside-btn" type="button" title="单栏和双栏切换"><i class="fas fa-arrows-alt-h"></i></button></div><div id="rightside-config-show"><button id="rightside-config" type="button" title="设置"><i class="fas fa-cog fa-spin"></i></button><button class="close" id="mobile-toc-button" type="button" title="目录"><i class="fas fa-list-ul"></i></button><button id="go-up" type="button" title="回到顶部"><span class="scroll-percent"></span><i class="fas fa-arrow-up"></i></button></div></div><div><script src="/js/utils.js?v=5.7.0"></script><script src="/js/main.js?v=5.7.0"></script><script src="https://cdn.jsdelivr.net/npm/@fancyapps/ui@6.1.14/dist/fancybox/fancybox.umd.min.js"></script><div class="js-pjax"></div><script src="/js/custom.js"></script><script src="https://cdn.jsdelivr.net/npm/pjax@0.2.8/pjax.min.js" defer="defer"></script><script>document.addEventListener('DOMContentLoaded', () => {
+  const pjaxSelectors = ["head > title","#config-diff","#body-wrap","#rightside-config-hide","#rightside-config-show",".js-pjax"]
+
+  window.pjax = new Pjax({
+    elements: 'a:not([target="_blank"]):not([data-fancybox])',
+    selectors: pjaxSelectors,
+    cacheBust: false,
+    analytics: false,
+    scrollRestoration: false
+  })
+
+  const triggerPjaxFn = (val) => {
+    if (!val) return
+    Object.values(val).forEach(fn => {
+      try {
+        fn()
+      } catch (err) {
+        console.debug('Pjax callback failed:', err)
+      }
+    })
+  }
+
+  document.addEventListener('pjax:send', () => {
+    // removeEventListener
+    btf.removeGlobalFnEvent('pjaxSendOnce')
+    btf.removeGlobalFnEvent('themeChange')
+
+    // reset readmode
+    const $bodyClassList = document.body.classList
+    if ($bodyClassList.contains('read-mode')) $bodyClassList.remove('read-mode')
+
+    triggerPjaxFn(window.globalFn.pjaxSend)
+  })
+
+  document.addEventListener('pjax:complete', () => {
+    btf.removeGlobalFnEvent('pjaxCompleteOnce')
+    document.querySelectorAll('script[data-pjax]').forEach(item => {
+      if (!item.parentNode) return
+      const newScript = document.createElement('script')
+      const content = item.text || item.textContent || ''
+      Array.from(item.attributes).forEach(attr => newScript.setAttribute(attr.name, attr.value))
+      newScript.appendChild(document.createTextNode(content))
+      item.parentNode.replaceChild(newScript, item)
+    })
+
+    triggerPjaxFn(window.globalFn.pjaxComplete)
+  })
+
+  document.addEventListener('pjax:error', e => {
+    const responseURL = e.request && e.request.responseURL
+    if (e.request && e.request.status === 404) {
+      true
+        ? pjax.loadUrl('/404.html')
+        : responseURL && (window.location.href = responseURL)
+    } else if (responseURL) {
+      window.location.href = responseURL
+    }
+  })
+})</script><script async data-pjax src="//busuanzi.ibruce.info/busuanzi/2.3/busuanzi.pure.mini.js"></script><div id="local-search"><div class="search-dialog"><nav class="search-nav"><span class="search-dialog-title">搜索</span><i class="fas fa-spinner fa-pulse" id="loading-status" hidden="hidden"></i><button class="search-close-button"><i class="fas fa-times"></i></button></nav><div class="text-center" id="loading-database"><i class="fas fa-spinner fa-pulse"></i><span>  数据加载中</span></div><div class="local-search-input"><input placeholder="搜索文章..." type="text"/></div><hr/><div id="local-search-results"></div><div class="ais-Pagination" id="local-search-pagination" style="display:none;"><ul class="ais-Pagination-list"></ul></div><div id="local-search-stats"></div></div><div id="search-mask"></div><script src="/js/search/local-search.js?v=5.7.0"></script></div></div></body></html>
